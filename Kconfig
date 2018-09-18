@@ -1,0 +1,12 @@
+config USR_LIB_SD
+  bool  "userspace libsd for SDCard support"
+  default y
+  select USR_DRV_SDIO
+  ---help---
+  Support for SDCard hardware-independent protocol implementation.
+  This lib depends on the sdio driver, which manage the HW IP.
+config USR_LIB_SD_CFLAGS
+  string
+  default " -I../../libs/sd/api " if USR_LIB_SD
+
+
