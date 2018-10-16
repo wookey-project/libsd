@@ -28,4 +28,8 @@ int8_t sd_read(uint32_t *buffer, uint32_t addr, uint32_t len);
  */
 int8_t sd_write(uint32_t *buffer, uint32_t addr, uint32_t len);
 
+uint32_t sd_get_block_size(void);
+
+uint32_t sd_get_block_number(void);
+
 #endif /*!LIBSD_H_*/

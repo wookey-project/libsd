@@ -188,6 +188,19 @@ uint32_t sd_get_capacity(void)
     }
 }
 
+uint32_t sd_get_block_number(void)
+{
+    if (g_sd_card.csd.csd_structure == 0) {
+        uint32_t    mult = 1 << (g_sd_card.csd.c_size_mult + 2);
+        uint32_t    blocknr = (g_sd_card.csd.c_size + 1) * mult;
+        return blocknr;
+    } else {
+        uint32_t    c_size =
+            ((uint32_t) ((sd_csd_v2_t *) (&g_sd_card.csd))->c_size);
+        return ((c_size + 1));
+    }
+}
+
 /*
  * Return the maximum block size
  * The maximum data block length is computed as 2^READ_BL_LEN.
