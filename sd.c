@@ -173,6 +173,7 @@ uint32_t sd_card_csd_structure(void)
  * part 5.3.2 in 'C_SIZE' paragraph
  * SD Specifications Part 1 Physical Layer Simplified Specification Version 2.00 September 25, 2006
  * SD_spec_part1_4.10.pdf
+ * return capacity in Kblocks
  */
 uint32_t sd_get_capacity(void)
 {

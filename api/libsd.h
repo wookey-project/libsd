@@ -32,4 +32,6 @@ uint32_t sd_get_block_size(void);
 
 uint32_t sd_get_block_number(void);
 
+uint32_t sd_get_capacity(void);
+
 #endif /*!LIBSD_H_*/
