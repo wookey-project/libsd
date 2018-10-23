@@ -178,10 +178,12 @@ uint32_t sd_card_csd_structure(void)
 uint32_t sd_get_capacity_byte(void)
 {
     if (g_sd_card.csd.csd_structure == 0) {
-        uint32_t    block_len = 1 << (g_sd_card.csd.read_bl_len);
+//        uint32_t    block_len = 1 << (g_sd_card.csd.read_bl_len);
         uint32_t    mult = 1 << (g_sd_card.csd.c_size_mult + 2);
         uint32_t    blocknr = (g_sd_card.csd.c_size + 1) * mult;
-        return blocknr * block_len;
+        //return blocknr * block_len ;
+        return blocknr ;
+        //when multiplied by the number of blocks it gives the size in kbytes
     } else {
         uint32_t    c_size =
             ((uint32_t) ((sd_csd_v2_t *) (&g_sd_card.csd))->c_size);
