@@ -101,6 +101,7 @@ static void print_csd_v2(sd_csd_v2_t * csd)
 static int8_t sd_send_cmd(struct sdio_cmd cmd)
 {
     sdio_clear_flag(0xffffff);
+    //printf("send cmd value %x arg %x\n",cmd.cmd_value,cmd.arg);
     sdio_hw_send_cmd(cmd.cmd_value, cmd.arg, cmd.response);
     return 0;
 }
@@ -146,14 +147,27 @@ int8_t sd_write(uint32_t * buffer, uint32_t addr, uint32_t len)
 //  printf("[SD] write (buffer = %x, addr = %x, len = %x\n", buffer, addr, len);
 //  dbg_flush();
 
-    do {
+/*    do {
         send_cmd13_card();
     } while (!(g_sd_card.status_reg >> 8 & 1));
     //Wait for card to set READY_FOR_DATA
+*/
     if (len > BLOCK_SIZE)
-        return new_sd_rw(buffer, addr, len, 25 /*SD_WRITE_MULTIPLE_BLOCK */ );
-    else
-        return new_sd_rw(buffer, addr, len, 24 /*SD_WRITE_BLOCK */ );
+      {
+        int status=new_sd_rw(buffer, addr, len, 25 /*SD_WRITE_MULTIPLE_BLOCK */ );
+        do {
+          send_cmd13_card();
+        } while (!(g_sd_card.status_reg >> 8 & 1));
+        return status;
+      }
+  else
+      {
+        int status=new_sd_rw(buffer, addr, len, 24 /*SD_WRITE_BLOCK */ );
+        do {
+          send_cmd13_card();
+        } while (!(g_sd_card.status_reg >> 8 & 1));
+        return status;
+      }
 }
 
 static void sdio_dmacallback(uint8_t irq __UNUSED, uint32_t status __UNUSED)
@@ -175,61 +189,38 @@ uint32_t sd_card_csd_structure(void)
  * SD_spec_part1_4.10.pdf
  * return capacity in Kblocks
  */
-uint32_t sd_get_capacity_byte(void)
-{
-    if (g_sd_card.csd.csd_structure == 0) {
-//        uint32_t    block_len = 1 << (g_sd_card.csd.read_bl_len);
-        uint32_t    mult = 1 << (g_sd_card.csd.c_size_mult + 2);
-        uint32_t    blocknr = (g_sd_card.csd.c_size + 1) * mult;
-        //return blocknr * block_len ;
-        return blocknr ;
-        //when multiplied by the number of blocks it gives the size in kbytes
-    } else {
-        uint32_t    c_size =
-            ((uint32_t) ((sd_csd_v2_t *) (&g_sd_card.csd))->c_size);
-        return ((c_size + 1) * 1024);
-    }
-}
 uint32_t sd_get_capacity(void)
 {
     if (g_sd_card.csd.csd_structure == 0) {
         uint32_t    mult = 1 << (g_sd_card.csd.c_size_mult + 2);
-        uint32_t    blocknr = (g_sd_card.csd.c_size + 1) * mult;
+        uint32_t    blocknr = (g_sd_card.csd.c_size + 1) * mult *2;//!!!!PHT *2
         return blocknr;
     } else {
         uint32_t    c_size =
             ((uint32_t) ((sd_csd_v2_t *) (&g_sd_card.csd))->c_size);
-        return ((c_size + 1) );
+        return ((c_size + 1) *1024);
     }
 }
+/*
+ * Return the maximum block size
+ * The maximum data block length is computed as 2^READ_BL_LEN.
+ * The maximum block length might therefore be in the range 512...2048 bytes
+ * However, block operation must be operated on  at most 512 blocks
+ * So only 512 is returned here as it is the maximal value operable
+ * See SD_SPEC 4.3.2 (2GByte Card) P30 
+ */
 uint32_t sd_get_blocksize(void)
 {
-    if (g_sd_card.csd.csd_structure == 0) {
-        uint32_t    block_len = 1 << (g_sd_card.csd.read_bl_len);
-        return block_len;
-    } else {
-        return 512;
-    }
-}
-
-uint32_t sd_get_block_number(void)
-{
-    if (g_sd_card.csd.csd_structure == 0) {
-        uint32_t    mult = 1 << (g_sd_card.csd.c_size_mult + 2);
-        uint32_t    blocknr = (g_sd_card.csd.c_size + 1) * mult;
-        return blocknr;
-    } else {
-        uint32_t    c_size =
-            ((uint32_t) ((sd_csd_v2_t *) (&g_sd_card.csd))->c_size);
-        return ((c_size + 1));
-    }
+    return 512;
 }
 
 /*
  * Return the maximum block size
  * The maximum data block length is computed as 2^READ_BL_LEN.
  * The maximum block length might therefore be in the range 512...2048 bytes
- *
+ * However, block operation must be operated on  at most 512 blocks
+ * So only 512 is returned here as it is the maximal value operable
+ * See SD_SPEC 4.3.2 (2GByte Card) P30 
  */
 uint32_t sd_get_block_size(void)
 {
@@ -245,7 +236,9 @@ uint32_t sd_get_block_size(void)
              read_bl_len);
         read_bl_len = 11;
     }
-    return 1 << read_bl_len;
+    
+    return 512; 
+    //return 1 << read_bl_len;
 }
 
 /* SEND CMD13 */
@@ -402,6 +395,7 @@ static void get_csd_sync(void)
            (SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND)) ;
 /*FIXME: Do error checking/reporting here*/
     sdio_hw_get_long_resp(&g_sd_card.csd);
+
 
 }
 
@@ -725,7 +719,7 @@ void sd_launch_dma(int i)
     if (!ret)                   // FIXME
         sdio_launch_dma(i);
 }
-
+uint32_t saver1;
 uint32_t sd_data_transfer_automaton()
 {
     uint32_t    err = 0, nevents;
@@ -791,6 +785,7 @@ uint32_t sd_data_transfer_automaton()
             case 17:           //Read Single Block
             case 18:           //Read Multiple Blocks
                 if (sd_getflags(SDIO_CMDREND)) {
+                    saver1=sdio_hw_get_short_resp();
                     //sdio_clear_flag(SDIO_CMDREND);
                     g_sd_card.state = SD_DATA;
                     //sd_launch_dma(1);
@@ -938,11 +933,11 @@ static void prepare_transfer(dma_dir_t dir, uint32_t * buffer, uint32_t buf_len)
     }
 
     if (dir == PERIPHERAL_TO_MEMORY) {
-        sdio_prepare_dma(0xffffffff, buf_len, 1);
+        sdio_prepare_dma(0xffffffff, buf_len, 9);
         sd_launch_dma(1);
         /* We launch the DMA transfer right now for reading */
     } else {
-        sdio_prepare_dma(0xffffffff, buf_len, 0);
+        sdio_prepare_dma(0xffffffff, buf_len, 9);
         /* for writing operation, DMA tranfer is to
            be launched after CMDREND is asserted, not now */
     }
@@ -962,6 +957,7 @@ static int8_t new_sd_rw(uint32_t * buffer, uint32_t addr, uint32_t size,
     memset(&cmd, 0, sizeof(cmd));
     cmd.cmd_value = op;
     /*CF P106 SDSC use bytes unit address but SDHC and SDXC use block */
+    //  printf("%s: %d BLOCK_SIZE %x\n",__func__,__LINE__,BLOCK_SIZE);
     cmd.arg = g_sd_card.ccs ? addr : BLOCK_SIZE * addr;
     cmd.response = SHORT_RESP;
     //send read/write cmd

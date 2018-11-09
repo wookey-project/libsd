@@ -214,7 +214,7 @@ static volatile struct {
     uint8_t     send_if:1;
     uint8_t     ack_voltage:1;
     uint8_t     ACMD:1;
-    enum sd_state state;
+    volatile enum sd_state state;
     struct sd_csd_v1 csd;
     uint8_t     bus_width;
     uint8_t     timeout;
