@@ -540,7 +540,7 @@ static void _send_acmd41()
 int sd_r3_busy()
 {
     //Get the busy bit
-    return ! !(sdio_hw_get_short_resp() & (1 << 31u));
+    return ! !(sdio_hw_get_short_resp() & ((uint32_t)1 << 31u));
 }
 
 int sd_r3_ccs()

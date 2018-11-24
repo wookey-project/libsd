@@ -88,11 +88,11 @@ void        sd_flush_commands(void);
 #define R2_OR_R3	((1 << 6) - 1)  /* ACMD41 => R3, See spec section 4.9.4 */
 
 /* Card status in response R1 */
-#define CARD_STATUS_OUT_OF_RANGE	(1 << 31)
+#define CARD_STATUS_OUT_OF_RANGE	((uint32_t)1 << 31)
 #define CARD_STATUS_ADDRESS_ERROR	(1 << 30)
 #define CARD_STATUS_BLOCK_LEN_ERROR	(1 << 29)
 #define CARD_STATUS_ERASE_SEQ_ERROR	(1 << 28)
-#define CARD_STATUS_ERASE_PARAM	(1 << 27)
+#define CARD_STATUS_ERASE_PARAM		(1 << 27)
 #define CARD_STATUS_WP_VIOLATION	(1 << 26)
 #define CARD_STATUS_CARD_IS_LOCKED	(1 << 25)
 #define CARD_STATUS_LOCK_UNLOCK_FAILED	(1 << 24)
