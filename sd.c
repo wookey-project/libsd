@@ -28,7 +28,26 @@
 #define SD_ERROR 0
 
 /* libsd implementation, using libsdio public API */
-dma_t       dma = { 0 };        /*dev to mem */
+dma_t       dma = {
+    .in_addr = 0,
+    .out_addr = 0,
+    .in_prio = 0,
+    .out_prio = 0,
+    .size = 0,
+    .dma = 0,
+    .channel = 0,
+    .stream = 0,
+    .flow_control = 0,
+    .dir = 0,
+    .mode = 0,
+    .mem_inc = false,
+    .dev_inc = false,
+    .datasize = 0,
+    .mem_burst = 0,
+    .dev_burst = 0,
+    .in_handler = NULL,
+    .out_handler = NULL
+};        /*dev to mem */
 
 int         dma_descriptor;
 
@@ -467,7 +486,13 @@ static void set_bus_width_sync(uint8_t width)
 uint32_t sd_card_reset()
 {
     /* CMD 0:  GO_IDLE_STATE */
-    struct sdio_cmd cmd = { 0 };
+    struct sdio_cmd cmd = {
+        .cmd_value = 0,
+        .arg = 0,
+        .response = 0,
+        .buf = NULL,
+        .buf_len = 0
+    };
     cmd.cmd_value = SD_GO_TO_IDLE_STATE;
     cmd.response = NO_RESP;
 
