@@ -5,8 +5,4 @@ config USR_LIB_SD
   ---help---
   Support for SDCard hardware-independent protocol implementation.
   This lib depends on the sdio driver, which manage the HW IP.
-config USR_LIB_SD_CFLAGS
-  string
-  default " -I../../libs/sd/api " if USR_LIB_SD
-
 
