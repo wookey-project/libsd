@@ -3,6 +3,10 @@
 
 #include "api/types.h"
 
+#define SD_BUSY 2
+#define SD_SUCCESS 1
+#define SD_ERROR 0
+
 /* libsd public API */
 uint8_t sd_early_init(void);
 
@@ -36,4 +40,7 @@ uint32_t sd_get_block_number(void);
 
 uint32_t sd_get_capacity(void);
 
+extern volatile uint8_t sd_error;
+extern uint32_t saver1;
+extern uint32_t savestatus;
 #endif /*!LIBSD_H_*/

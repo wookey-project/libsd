@@ -114,6 +114,15 @@ void        sd_flush_commands(void);
 #define CARD_STATUS_AKE_SEQ_ERROR	(1 << 3)
 #define CARD_STATUS_R6_AKE_SEQ_ERROR	(1 << 3)
 
+#define CARD_STATUS_ERROR_MASK (CARD_STATUS_OUT_OF_RANGE|CARD_STATUS_ADDRESS_ERROR\
+                  |CARD_STATUS_BLOCK_LEN_ERROR |CARD_STATUS_ERASE_SEQ_ERROR\
+                  |CARD_STATUS_ERASE_PARAM |CARD_STATUS_WP_VIOLATION\
+                  |CARD_STATUS_CARD_IS_LOCKED |CARD_STATUS_LOCK_UNLOCK_FAILED\
+                  |CARD_STATUS_COM_CRC_ERROR |CARD_STATUS_ILLEGAL_COMMAND \
+                  |CARD_STATUS_CARD_ECC_FAILED |CARD_STATUS_CC_ERROR \
+                  |CARD_STATUS_ERROR |CARD_STATUS_CSD_OVERWRITE \
+                  |CARD_STATUS_AKE_SEQ_ERROR)
+
 typedef struct __packed sd_csd_v1 {
     uint8_t     reserved0:1;
     uint8_t     crc:7;
