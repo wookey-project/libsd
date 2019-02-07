@@ -139,16 +139,7 @@ static void sd_set_block_len(void)
 * addr -> the numero of the block to be read
 * size -> the number of blocks to be read
 */
-int8_t sd_read(uint32_t * buffer, uint32_t addr, uint32_t len)
-{
-//  printf("[SD] read (buffer = %x, addr = %x, len = %x\n", buffer, addr, len);
-//  dbg_flush();
-    if (len > BLOCK_SIZE)
-        return new_sd_rw(buffer, addr, len, 18 /*SD_READ_MULTIPLE_BLOCK */ );
-    else
-        return new_sd_rw(buffer, addr, len, 17 /*SD_READ_SINGLE_BLOCK */ );
-}
-
+static uint8_t lastcom;
 static void send_cmd13_card(void)
 {
     struct sdio_cmd cmd;
@@ -160,22 +151,63 @@ static void send_cmd13_card(void)
     sd_send_cmd(cmd);
 }
 
+int8_t sd_read(uint32_t * buffer, uint32_t addr, uint32_t len)
+{
+//  printf("[SD] read (buffer = %x, addr = %x, len = %x\n", buffer, addr, len);
+//  dbg_flush();
+#if 1
+    if(lastcom == 24 || lastcom == 25)
+    {
+      do {
+        send_cmd13_card();
+        } while (!(g_sd_card.status_reg >> 8 & 1));
+      
+    }
+#endif
+    if (len > BLOCK_SIZE)
+        {
+          lastcom=18;
+          return new_sd_rw(buffer, addr, len, 18 /*SD_READ_MULTIPLE_BLOCK */ );
+        }  
+  else  
+        {
+        lastcom=17; 
+       return new_sd_rw(buffer, addr, len, 17 /*SD_READ_SINGLE_BLOCK */ );
+        }
+}
+
+
 int8_t sd_write(uint32_t * buffer, uint32_t addr, uint32_t len)
 {
+#if 1
+    if(lastcom == 24 || lastcom == 25)
+    {
+      do {
+        send_cmd13_card();
+        } while (!(g_sd_card.status_reg >> 8 & 1));
+      
+    }
+#endif
     if (len > BLOCK_SIZE)
     {
         int status=new_sd_rw(buffer, addr, len, 25 /*SD_WRITE_MULTIPLE_BLOCK */ );
-        do {
+        lastcom=25;
+#if 0
+         do {
             send_cmd13_card();
         } while (!(g_sd_card.status_reg >> 8 & 1));
-        return status;
+#endif     
+          return status;
     }
     else
     {
         int status=new_sd_rw(buffer, addr, len, 24 /*SD_WRITE_BLOCK */ );
+        lastcom=24;
+#if 0
         do {
             send_cmd13_card();
         } while (!(g_sd_card.status_reg >> 8 & 1));
+#endif     
         return status;
     }
 }
