@@ -6,7 +6,6 @@
 #include "api/syscall.h"
 #include "api/print.h"
 #include "api/regutils.h"
-#include "kernel/exported/dmas.h"
 
 /*
  * BLOCK_SIZE - Size of block on GoodUSB
@@ -161,17 +160,17 @@ int8_t sd_read(uint32_t * buffer, uint32_t addr, uint32_t len)
       do {
         send_cmd13_card();
         } while (!(g_sd_card.status_reg >> 8 & 1));
-      
+
     }
 #endif
     if (len > BLOCK_SIZE)
         {
           lastcom=18;
           return new_sd_rw(buffer, addr, len, 18 /*SD_READ_MULTIPLE_BLOCK */ );
-        }  
-  else  
+        }
+  else
         {
-        lastcom=17; 
+        lastcom=17;
        return new_sd_rw(buffer, addr, len, 17 /*SD_READ_SINGLE_BLOCK */ );
         }
 }
@@ -185,7 +184,7 @@ int8_t sd_write(uint32_t * buffer, uint32_t addr, uint32_t len)
       do {
         send_cmd13_card();
         } while (!(g_sd_card.status_reg >> 8 & 1));
-      
+
     }
 #endif
     if (len > BLOCK_SIZE)
@@ -196,7 +195,7 @@ int8_t sd_write(uint32_t * buffer, uint32_t addr, uint32_t len)
          do {
             send_cmd13_card();
         } while (!(g_sd_card.status_reg >> 8 & 1));
-#endif     
+#endif
           return status;
     }
     else
@@ -207,7 +206,7 @@ int8_t sd_write(uint32_t * buffer, uint32_t addr, uint32_t len)
         do {
             send_cmd13_card();
         } while (!(g_sd_card.status_reg >> 8 & 1));
-#endif     
+#endif
         return status;
     }
 }
