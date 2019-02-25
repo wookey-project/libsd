@@ -238,7 +238,7 @@ uint32_t sd_get_capacity(void)
         return blocknr;
     } else {
         uint32_t    c_size =
-            ((uint32_t) ((sd_csd_v2_t *) (&g_sd_card.csd))->c_size);
+            ((uint32_t) ((volatile sd_csd_v2_t *) (&g_sd_card.csd))->c_size);
         return ((c_size + 1) *1024);
     }
 }
