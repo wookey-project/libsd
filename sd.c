@@ -707,10 +707,10 @@ uint32_t sdcard_init_automaton()
         case SD_CMD2:              //ALL_SEND_CID
             err = 0;                //FIXME error handling
             if (sd_getflags(SDIO_FLAG_CTIMEOUT)) {
-                err = -1;
+                err = 1;
             }
             if (sd_getflags(SDIO_FLAG_CCRCFAIL)) {
-                err = -1;
+                err = 1;
             }
             if (sd_getflags(SDIO_FLAG_CMDREND)) {
                 g_sd_card.state = SD_STBY;
@@ -904,7 +904,7 @@ uint32_t sd_data_transfer_automaton()
                 } else {
                   //Some other flags than the
                   //sd_error=SD_ERROR;
-                  err = -1;
+                  err = 1;
                   break;
                 }
               case 26:
@@ -1106,7 +1106,7 @@ uint32_t sd_init(void)
          */
         sdio_set_timeout(0xffffffff);
         (err = sdcard_init_automaton());
-        if (err < 0)
+        if (err != 0)
             goto out;
         while (!sdio_finished_or_error()) ;
 
@@ -1118,7 +1118,7 @@ uint32_t sd_init(void)
         sys_yield();
     }
     if (send_relative_addr_response()) {
-        err = -1;
+        err = 1;
         goto out;
     }
     get_csd_sync();
