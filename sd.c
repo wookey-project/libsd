@@ -640,7 +640,7 @@ uint32_t sdcard_init_automaton()
         case SD_CMD8:              //SEND_IF_COND
             tmp = sd_r7_response();
             if (tmp & SDIO_FLAG_CCRCFAIL) {
-                err = -1;           //Card is unworkable
+                err = 1;           //Card is unworkable
                 break;
             }
             if ((tmp & SDIO_FLAG_CTIMEOUT)) {
