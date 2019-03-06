@@ -233,11 +233,10 @@ uint32_t sd_card_csd_structure(void)
 uint32_t sd_get_capacity(void)
 {
     if (g_sd_card.csd.csd_structure == 0) {
+        uint32_t mult = 1 << (g_sd_card.csd.c_size_mult + 2);
         uint32_t tmp=g_sd_card.csd.c_size_high;
-        uint32_t    mult = 1 << (g_sd_card.csd.c_size_mult + 2);
-        uint32_t  blocknr = (((tmp<<10)
-                                +g_sd_card.csd.c_size_low) + 1) * mult *2;//!!!!PHT *2
-        
+        uint32_t blocknr = (tmp
+                                +(g_sd_card.csd.c_size_low<<2) + 1) * mult *2;//!!!!PHT *2
         return blocknr;
     } else {
         uint32_t    c_size =
