@@ -5,6 +5,7 @@
 #include "sd.h"
 #include "api/syscall.h"
 #include "api/print.h"
+#include "api/string.h"
 #include "api/regutils.h"
 
 /*
