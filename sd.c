@@ -154,61 +154,41 @@ static void send_cmd13_card(void)
 
 int8_t sd_read(uint32_t * buffer, uint32_t addr, uint32_t len)
 {
-//  printf("[SD] read (buffer = %x, addr = %x, len = %x\n", buffer, addr, len);
-//  dbg_flush();
-#if 1
-    if(lastcom == 24 || lastcom == 25)
-    {
-      do {
-        send_cmd13_card();
-        } while (!(g_sd_card.status_reg >> 8 & 1));
-
+    if (len == 0) {
+        return SD_SUCCESS;
     }
-#endif
-    if (len > BLOCK_SIZE)
-        {
+    if(lastcom == 24 || lastcom == 25) {
+        do {
+            send_cmd13_card();
+        } while (!(g_sd_card.status_reg >> 8 & 1));
+    }
+    if (len > BLOCK_SIZE) {
           lastcom=18;
           return new_sd_rw(buffer, addr, len, 18 /*SD_READ_MULTIPLE_BLOCK */ );
-        }
-  else
-        {
+    } else {
         lastcom=17;
-       return new_sd_rw(buffer, addr, len, 17 /*SD_READ_SINGLE_BLOCK */ );
-        }
+        return new_sd_rw(buffer, addr, len, 17 /*SD_READ_SINGLE_BLOCK */ );
+    }
 }
 
 
 int8_t sd_write(uint32_t * buffer, uint32_t addr, uint32_t len)
 {
-#if 1
-    if(lastcom == 24 || lastcom == 25)
-    {
-      do {
-        send_cmd13_card();
-        } while (!(g_sd_card.status_reg >> 8 & 1));
-
+    if (len == 0) {
+        return SD_SUCCESS;
     }
-#endif
-    if (len > BLOCK_SIZE)
-    {
-        int status=new_sd_rw(buffer, addr, len, 25 /*SD_WRITE_MULTIPLE_BLOCK */ );
-        lastcom=25;
-#if 0
-         do {
-            send_cmd13_card();
-        } while (!(g_sd_card.status_reg >> 8 & 1));
-#endif
-          return status;
-    }
-    else
-    {
-        int status=new_sd_rw(buffer, addr, len, 24 /*SD_WRITE_BLOCK */ );
-        lastcom=24;
-#if 0
+    if(lastcom == 24 || lastcom == 25) {
         do {
             send_cmd13_card();
         } while (!(g_sd_card.status_reg >> 8 & 1));
-#endif
+    }
+    if (len > BLOCK_SIZE) {
+        int status=new_sd_rw(buffer, addr, len, 25 /*SD_WRITE_MULTIPLE_BLOCK */ );
+        lastcom=25;
+        return status;
+    } else {
+        int status=new_sd_rw(buffer, addr, len, 24 /*SD_WRITE_BLOCK */ );
+        lastcom=24;
         return status;
     }
 }
