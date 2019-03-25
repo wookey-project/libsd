@@ -318,49 +318,6 @@ static int check_r6_error(void)
     return 0;
 }
 
-#if 0
-
-static int r2_or_r3_response(void)
-{
-    uint32_t    resp;
-    switch (g_sd_card.state) {
-    case SD_IDLE:
-        /* ACMD41 */
-        resp = sdio_hw_get_short_resp();
-        if (!(resp >> 31)) {
-            //printf("[SD] Card is busy, retrying ACMD41\n");
-            resend_current_cmd();
-            return -1;
-        }
-        /* Get CCS field, see spec Figure 4-4 */
-        g_sd_card.high_capacity = (resp >> 30) & 1;
-        g_sd_card.state = SD_READY;
-
-        /* Right after ACMD 41, clock can be upper than 400kHz */
-        sdio_hw_set_clock_divisor(-1);
-        break;
-    case SD_READY:
-        /* R2 after CMD2 */
-        /* TODO: get CID */
-        g_sd_card.state = SD_IDENT;
-        break;
-    case SD_STBY:
-        /* We assume that the cards CIDs have been
-         * stored after the CMD2 (ALL_SEND_CID) in
-         * identification mode. So there is no need for
-         * CMD10 (SEND_CID) in data transfer mode.
-         * Therefore, we receive a R2 response in
-         * sand-by state only after a CMD9 (SEND_CSD).
-         */
-        sdio_hw_get_long_resp(&g_sd_card.csd);
-        break;
-    default:
-        printf("R2_OR_R3 in wrong state\n");
-    }
-    return 0;
-}
-
-#endif
 static int send_relative_addr_response(void)
 {
     if (check_r6_error())
@@ -676,7 +633,6 @@ uint32_t sdcard_init_automaton()
                             ("wrong path ! voltage switch impossible with wookey!");
                         send_cmd11();   //Voltage switch
                     } else {
-                        printf("CMD2\n");
                         g_sd_card.state = SD_CMD2;
                         sdio_set_timeout(0xfffffff);
                         send_cmd2();    //SEND_ALL_CID
