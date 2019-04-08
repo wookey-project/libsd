@@ -946,11 +946,11 @@ static void prepare_transfer(dma_dir_t dir, uint32_t * buffer, uint32_t buf_len)
     }
 
     if (dir == PERIPHERAL_TO_MEMORY) {
-        sdio_prepare_dma(0xffffffff, buf_len, 9);
+        sdio_prepare_dma(SDIO_READ_TIMEOUT, buf_len, 9);
         sd_launch_dma(1);
         /* We launch the DMA transfer right now for reading */
     } else {
-        sdio_prepare_dma(0xffffffff, buf_len, 9);
+        sdio_prepare_dma(SDIO_WRITE_TIMEOUT, buf_len, 9);
         /* for writing operation, DMA tranfer is to
            be launched after CMDREND is asserted, not now */
     }
