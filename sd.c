@@ -3,11 +3,11 @@
 //#include "sdio_regs.h"
 //#include "sdio.h"               // FIXME: should not be included here
 #include "sd.h"
-#include "api/syscall.h"
-#include "api/stdio.h"
-#include "api/nostd.h"
-#include "api/string.h"
-#include "api/regutils.h"
+#include "libc/syscall.h"
+#include "libc/stdio.h"
+#include "libc/nostd.h"
+#include "libc/string.h"
+#include "libc/regutils.h"
 
 /*
  * BLOCK_SIZE - Size of block on GoodUSB

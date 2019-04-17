@@ -1,7 +1,7 @@
 #ifndef LIBSD_H_
 #define LIBSD_H_
 
-#include "api/types.h"
+#include "libc/types.h"
 
 #define SD_BUSY 2
 #define SD_SUCCESS 1

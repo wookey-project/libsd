@@ -1,8 +1,8 @@
 #ifndef SD_H_
 #define SD_H_
 
-#include "api/libsdio.h"
-#include "api/types.h"
+#include "libsdio.h"
+#include "libc/types.h"
 
 struct sdio_cmd {
     union {
@@ -156,7 +156,7 @@ typedef struct __packed sd_csd_v1 {
     uint16_t     read_blk_misalign:1;
     uint16_t     write_blk_misalign:1;
     uint16_t     read_bl_partial:1;
-   
+
     uint16_t     read_bl_len:4;
     uint16_t    ccc:12;
     uint8_t     tran_speed;
