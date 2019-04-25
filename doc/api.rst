@@ -1,5 +1,7 @@
-The SDCard communication API
-----------------------------
+.. _sd_api:
+
+SDCard communication API
+------------------------
 
 Initializing the stack
 """"""""""""""""""""""
@@ -9,7 +11,6 @@ Initialize the SD library is made through two main functions::
    #include "libsd.h"
 
    uint8_t sd_early_init(void);
-
    uint32_t sd_init(void);
 
 
@@ -39,14 +40,12 @@ Interacting with the SDCard
 Getting informations from the SDCard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Accessing the SDCard informations is done using the following API::
+Accessing the SDCard informations is done using the following API ::
 
    #include "libsd.h"
 
    uint32_t sd_get_capacity(void);
-
    uint32_t sd_get_block_size(void);
-
    uint32_t sd_get_block_number(void);
 
 
@@ -55,12 +54,11 @@ FIXME description.
 Accessing SDCard data
 ^^^^^^^^^^^^^^^^^^^^^
 
-Reading from or writing into the SDCard is done using the following API::
+Reading from or writing into the SDCard is done using the following API ::
 
    #include "libsd.h"
 
    int8_t sd_read(uint32_t *buffer, uint32_t addr, uint32_t len);
-
    int8_t sd_write(uint32_t *buffer, uint32_t addr, uint32_t len);
 
 
