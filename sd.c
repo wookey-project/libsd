@@ -767,13 +767,15 @@ uint32_t sd_data_transfer_automaton()
                     // The expected response is R1
                     saver1=sdio_hw_get_short_resp();
                     //Let us see if an error is to be reported
-                    if(saver1&CARD_STATUS_ERROR_MASK)
+                    if(saver1 & CARD_STATUS_ERROR_MASK)
                     {
                         sd_error=SD_ERROR;
                         break;
                     }
 
                     //Let us see if current internal state is TRAN as we expected
+                    //Check is not mandatory but ensures coherency between internal card state
+                    //And host automaton state
                     if( ((saver1>>9)&0xf)!=(int)SD_TRAN) {
                         sd_error=SD_ERROR;
                         break;
@@ -875,7 +877,7 @@ uint32_t sd_data_transfer_automaton()
               g_sd_card.state = SD_PRG;
               nevents++;
             } else {
-              //FIXME: Error chhecking here
+              //FIXME: Error checking here
             }
             break;
         case SD_DATA:
