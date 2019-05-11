@@ -77,7 +77,7 @@ void        sd_flush_commands(void);
 #define SD_APP_CMD			55
 
 /* Application commands */
-#define ACMD(cmd)			(0x80 | cmd)
+#define ACMD(cmd)			(0x80 | (cmd))
 #define SD_SET_BUS_WIDTH_idx		6
 //# define SD_SET_BUS_WIDTH     ACMD(SD_SET_BUS_WIDTH_idx)
 #define SD_SET_BUS_WIDTH		SD_SET_BUS_WIDTH_idx
