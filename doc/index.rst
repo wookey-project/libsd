@@ -1,6 +1,9 @@
 The SD stack
 ============
 
+.. highlight:: c
+
+
 .. contents::
 
 Library providing an API for using a SDcard.
