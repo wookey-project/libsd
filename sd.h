@@ -7,19 +7,19 @@
 struct sdio_cmd {
     union {
         struct {
-            uint8_t     index:7;
-            uint8_t     is_acmd:1;
+            uint8_t index:7;
+            uint8_t is_acmd:1;
         } cmd;
-        uint8_t     cmd_value;
+        uint8_t cmd_value;
     };
-    uint32_t    arg;
+    uint32_t arg;
     enum sdio_resp_type response;
     /* For data commands */
-    uint32_t   *buf;
-    uint32_t    buf_len;
+    uint32_t *buf;
+    uint32_t buf_len;
 };
 
-uint32_t    sd_init(void);
+uint32_t sd_init(void);
 
 /**
  * sd_get_capacity - return the capacity of the SD card
@@ -27,7 +27,7 @@ uint32_t    sd_init(void);
  * Return: This function returns the size in bytes of the SD card. The return
  * value is undefined is the SD card is not ready (see @sd_is_ready)
  */
-uint32_t    sd_get_capacity(void);
+uint32_t sd_get_capacity(void);
 
 /**
  * sd_get_block_size - return the block size of the SD card
@@ -35,7 +35,7 @@ uint32_t    sd_get_capacity(void);
  * Return: This function returns the block size in bytes of the SD card. The
  * return value is undefined is the SD card is not ready (see @sd_is_ready)
  */
-uint32_t    sd_get_block_size(void);
+uint32_t sd_get_block_size(void);
 
 /**
  * sd_is_ready - return true if the SD card is ready
@@ -45,14 +45,14 @@ uint32_t    sd_get_block_size(void);
  * the SD card is in transfer mode (i.e. the identification is done) but an
  * operation can be in progress.
  */
-uint8_t     sd_is_ready(void);
+uint8_t sd_is_ready(void);
 
-uint32_t    sd_card_csd_structure(void);
+uint32_t sd_card_csd_structure(void);
 
 /**
  * sd_flush_commands - Send commands in SD queue
  */
-void        sd_flush_commands(void);
+void    sd_flush_commands(void);
 
 #define CMD_TIMEOUT		0xffffff
 #define SD_CMD_QUEUE_SIZE	32
@@ -124,80 +124,80 @@ void        sd_flush_commands(void);
                   |CARD_STATUS_AKE_SEQ_ERROR)
 
 typedef struct __packed sd_csd_v1 {
-    uint8_t     reserved0:1;
-    uint8_t     crc:7;
+    uint8_t reserved0:1;
+    uint8_t crc:7;
 
-    uint8_t     reserved8:2;
-    uint8_t     file_format:2;
-    uint8_t     tmp_write_protect:1;
-    uint8_t     perm_write_protect:1;
-    uint8_t     copy:1;
-    uint8_t     file_format_grp:1;
+    uint8_t reserved8:2;
+    uint8_t file_format:2;
+    uint8_t tmp_write_protect:1;
+    uint8_t perm_write_protect:1;
+    uint8_t copy:1;
+    uint8_t file_format_grp:1;
 
-    uint16_t     reserved16:5;
-    uint16_t     write_bl_partial:1;
-    uint16_t     write_bl_len:4;
-    uint16_t     r2w_factor:3;
-    uint16_t     reserved29:2;
-    uint16_t     wp_grp_enable:1;
+    uint16_t reserved16:5;
+    uint16_t write_bl_partial:1;
+    uint16_t write_bl_len:4;
+    uint16_t r2w_factor:3;
+    uint16_t reserved29:2;
+    uint16_t wp_grp_enable:1;
 
-    uint32_t     wp_grp_size:7;
-    uint32_t     sector_size:7;
-    uint32_t     erase_blk_en:1;
-    uint32_t     c_size_mult:3;
-    uint32_t     vdd_w_curr_max:3;
-    uint32_t     vdd_w_curr_min:3;
-    uint32_t     vdd_r_curr_max:3;
-    uint32_t     vdd_r_curr_min:3;
-    uint32_t    c_size_high:2;
-    uint16_t    c_size_low:10;
-    uint16_t     reserved74:2;
-    uint16_t     dsr_imp:1;
-    uint16_t     read_blk_misalign:1;
-    uint16_t     write_blk_misalign:1;
-    uint16_t     read_bl_partial:1;
+    uint32_t wp_grp_size:7;
+    uint32_t sector_size:7;
+    uint32_t erase_blk_en:1;
+    uint32_t c_size_mult:3;
+    uint32_t vdd_w_curr_max:3;
+    uint32_t vdd_w_curr_min:3;
+    uint32_t vdd_r_curr_max:3;
+    uint32_t vdd_r_curr_min:3;
+    uint32_t c_size_high:2;
+    uint16_t c_size_low:10;
+    uint16_t reserved74:2;
+    uint16_t dsr_imp:1;
+    uint16_t read_blk_misalign:1;
+    uint16_t write_blk_misalign:1;
+    uint16_t read_bl_partial:1;
 
-    uint16_t     read_bl_len:4;
-    uint16_t    ccc:12;
-    uint8_t     tran_speed;
-    uint8_t     nsac;
-    uint8_t     taac;
-    uint8_t     reserved120:6;
-    uint8_t     csd_structure:2;
+    uint16_t read_bl_len:4;
+    uint16_t ccc:12;
+    uint8_t tran_speed;
+    uint8_t nsac;
+    uint8_t taac;
+    uint8_t reserved120:6;
+    uint8_t csd_structure:2;
 } sd_csd_v1_t;
 
 typedef struct __packed {
-    uint8_t     reserved0:1;
-    uint8_t     crc:7;
-    uint8_t     reserved8:2;
-    uint8_t     file_format:2;
-    uint8_t     tmp_write_protect:1;
-    uint8_t     perm_write_protect:1;
-    uint8_t     copy:1;
-    uint8_t     file_format_grp:1;
-    uint16_t     reserved16:5;
-    uint16_t     write_bl_partial:1;
-    uint16_t     write_bl_len:4;
-    uint16_t     r2w_factor:3;
-    uint16_t     reserved29:2;
-    uint16_t     wp_grp_enable:1;
-    uint16_t     wp_grp_size:7;
-    uint16_t     sector_size:7;
-    uint16_t     erase_blk_en:1;
-    uint16_t     reserved47:1;
-    uint32_t    c_size:22;
-    uint32_t    reserved70:6;
-    uint32_t    dsr_imp:1;
-    uint32_t     read_blk_misalign:1;
-    uint32_t     write_blk_misalign:1;
-    uint32_t     read_bl_partial:1;
-    uint16_t     read_bl_len:4;
-    uint16_t    ccc:12;
-    uint8_t     tran_speed;
-    uint8_t     nsac;
-    uint8_t     taac;
-    uint8_t     reserved120:6;
-    uint8_t     csd_structure:2;
+    uint8_t reserved0:1;
+    uint8_t crc:7;
+    uint8_t reserved8:2;
+    uint8_t file_format:2;
+    uint8_t tmp_write_protect:1;
+    uint8_t perm_write_protect:1;
+    uint8_t copy:1;
+    uint8_t file_format_grp:1;
+    uint16_t reserved16:5;
+    uint16_t write_bl_partial:1;
+    uint16_t write_bl_len:4;
+    uint16_t r2w_factor:3;
+    uint16_t reserved29:2;
+    uint16_t wp_grp_enable:1;
+    uint16_t wp_grp_size:7;
+    uint16_t sector_size:7;
+    uint16_t erase_blk_en:1;
+    uint16_t reserved47:1;
+    uint32_t c_size:22;
+    uint32_t reserved70:6;
+    uint32_t dsr_imp:1;
+    uint32_t read_blk_misalign:1;
+    uint32_t write_blk_misalign:1;
+    uint32_t read_bl_partial:1;
+    uint16_t read_bl_len:4;
+    uint16_t ccc:12;
+    uint8_t tran_speed;
+    uint8_t nsac;
+    uint8_t taac;
+    uint8_t reserved120:6;
+    uint8_t csd_structure:2;
 } sd_csd_v2_t;
 
 enum sd_state {
@@ -219,22 +219,22 @@ enum sd_state {
 };
 
 static volatile struct {
-    uint16_t    rca;
-    uint8_t     version:1;
-    uint8_t     s18r:1;
-    uint8_t     s18a:1;
-    uint8_t     hcs:1;
-    uint8_t     ccs:1;
-    uint8_t     send_if:1;
-    uint8_t     ack_voltage:1;
-    uint8_t     ACMD:1;
+    uint16_t rca;
+    uint8_t version:1;
+    uint8_t s18r:1;
+    uint8_t s18a:1;
+    uint8_t hcs:1;
+    uint8_t ccs:1;
+    uint8_t send_if:1;
+    uint8_t ack_voltage:1;
+    uint8_t ACMD:1;
     volatile enum sd_state state;
     struct sd_csd_v1 csd;
-    uint8_t     bus_width;
-    uint8_t     timeout;
-    uint8_t     error;
+    uint8_t bus_width;
+    uint8_t timeout;
+    uint8_t error;
     struct sdio_cmd last_cmd;
-    uint32_t    status_reg;
+    uint32_t status_reg;
 
 } g_sd_card;
 
@@ -244,7 +244,7 @@ enum card_status_bit_type {
 };
 
 struct card_status_bit {
-    uint32_t    mask;
+    uint32_t mask;
     enum card_status_bit_type type;
 };
 
@@ -283,7 +283,7 @@ struct card_status_bit card_status_r6[] = {
 };
 
 #if DEBUG_LVL >= 1
-char        error_strings[][20] = {
+char    error_strings[][20] = {
     "",
     "",
     "",

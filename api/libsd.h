@@ -20,7 +20,7 @@ uint32_t sd_init(void);
  * @len: Number of words (32 bits) to read.
  * Return: This function returns 0 if success.
  */
-int8_t sd_read(uint32_t *buffer, uint32_t addr, uint32_t len);
+int8_t  sd_read(uint32_t * buffer, uint32_t addr, uint32_t len);
 
 /**
  * sd_write - write data to the SD card
@@ -30,7 +30,7 @@ int8_t sd_read(uint32_t *buffer, uint32_t addr, uint32_t len);
  * @len: Number of words (32 bits) to write.
  * Return: This function returns 0 if success.
  */
-int8_t sd_write(uint32_t *buffer, uint32_t addr, uint32_t len);
+int8_t  sd_write(uint32_t * buffer, uint32_t addr, uint32_t len);
 
 uint32_t sd_get_capacity(void);
 
@@ -43,4 +43,4 @@ uint32_t sd_get_capacity(void);
 extern volatile uint8_t sd_error;
 extern uint32_t saver1;
 extern uint32_t savestatus;
-#endif /*!LIBSD_H_*/
+#endif /*!LIBSD_H_ */
