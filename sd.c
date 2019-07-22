@@ -890,6 +890,7 @@ static inline void handle_sd_stby(const uint32_t lastcom)
     }
 }
 
+
 /*
  MMC_WaitIRQ state : P61 MMC spec
  transition function as follow
