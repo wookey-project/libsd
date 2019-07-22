@@ -736,116 +736,14 @@ static inline void handle_sd_stby(const uint32_t lastcom)
     case 9:    //GET_CSD
       sdio_hw_get_long_resp(&g_sd_card.csd);
       break;
-    case 10:*
- SD_TRAN state : P33 SD spec
- transition function as follow 
-          CMD6,17,18,19,30,48,56(r),58 or ACMD13,22,51 -> SD_DATA
-          CMD16,23,32,33 or ACMD6,42,23-> SD_tran
-          CMD24,25,26,27,42,49,56(w),59 -> SD_RCV
-          CMD20,28,29,38 -> SD_PRG
-          CMD7 -> SD_STBY
-*/
-static inline int handle_sd_tran(const uint32_t lastcom, uint32_t *nevents)
-{
-  int err=0;
-  //What is the reason for awaking in this state
-  g_sd_card.error = 0;
-  switch ((g_sd_card.ACMD << 31) | lastcom) {
-    case 7:    //CMD7 = SELECT/DESELECT_CARD
-      g_sd_card.state = SD_STBY;
-      break;
-    case 17:   //Read Single Block
-    case 18:   //Read Multiple Blocks
-      if (sd_getflags(SDIO_FLAG_CMDREND)) {
-        // The command ends succesfully
-        // The expected response is R1
-        saver1 = sdio_hw_get_short_resp();
-        //Let us see if an error is to be reported
-        if (saver1 & CARD_STATUS_ERROR_MASK) {
-          sd_error = SD_ERROR;
-          break;
-        }
-        //Let us see if current internal state is TRAN as we expected
-        //Check is not mandatory but ensures coherency between internal card state
-        //And host automaton state
-        if (((saver1 >> 9) & 0xf) != (int) SD_TRAN) {
-          sd_error = SD_ERROR;
-          break;
-        }
-        // No Error was reported for the command let us proceed the transition
-        g_sd_card.state = SD_DATA;
-        if (sd_getflags(SDIO_FLAG_DATA))    //Have the data transfer
-          //also ended?
-          (*nevents)++;
-        break;
-      } else {
-        //Something went wrong during the command send
-        //let us report the anomaly
-#if 0
-        sd_error = SD_ERROR;
-        err = -1;
-#endif
-        break;
-      }
-    case 19:
-    case 30:
-    case 48:
-      //case 56://r
-    case 58:
-      //case 58:
-    case ACMD(13):
-    case ACMD(22):
-    case ACMD(51):
-      g_sd_card.ACMD = 0;
-      g_sd_card.state = SD_DATA;
-      break;
-    case 16:
-    case 23:
-    case 32:
-    case 33:
-    case ACMD(6):
-    case ACMD(42):
-    case ACMD(23):
-      g_sd_card.ACMD = 0;
-      break;
-    case 24:
-    case 25:
-      if (sd_getflags(SDIO_FLAG_CMDREND)) {
-        // The command ended succesfully
-        // The expected response is R1
-        saver1 = sdio_hw_get_short_resp();
-
-        //Let us see if an error is  reported by the card
-        if (saver1 & CARD_STATUS_ERROR_MASK) {
-          sd_error = SD_ERROR;
-          break;
-        }
-        //Let us see if current internal state is TRAN as we expected
-        if (((saver1 >> 9) & 0xf) != (int) SD_TRAN) {
-          sd_error = SD_ERROR;
-          break;
-        }
-
-        // No Error was reported for the command let us proceed the transition
-        g_sd_card.state = SD_RCV;
-        sd_launch_dma(0);
-        if (sd_getflags(SDIO_FLAG_DATA))    //Have the data transfer
-          //also ended?
-          (*nevents)++;
-        break;
-      } else {
-        //Some other flags than the
-        //sd_error=SD_ERROR;
-        err = -1;
-        break;
-      }
-
+    case 10:
       break;
     default:
       //TODO: error checking here
       printf("illegal command while in SD_STBY");
   }
 }
+
 
 /*
  SD_TRAN state : P33 SD spec
