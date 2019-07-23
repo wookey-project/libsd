@@ -828,9 +828,9 @@ void sd_launch_dma(int i)
 
 void handle_send_status()
 {
-        if (sd_getflags(SDIO_FLAG_CMDREND)) {
-            uint8_t card_state;
-            uint32_t resp = sdio_hw_get_short_resp();
+    if (sd_getflags(SDIO_FLAG_CMDREND)) {
+        uint8_t card_state;
+        uint32_t resp = sdio_hw_get_short_resp();
 
         saver1=resp;
         g_sd_card.status_reg = resp;
