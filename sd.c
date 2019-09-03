@@ -459,9 +459,14 @@ static void set_bus_width_sync(uint8_t width)
     }
     if (!localretries) {
         printf("cannot set bus width\n");
+        g_sd_card.bus_width = 1;
+        sdio_hw_set_bus_width(1);
     }
-    g_sd_card.bus_width = width;
-    sdio_hw_set_bus_width(width);
+    else
+    {
+      g_sd_card.bus_width = width;
+      sdio_hw_set_bus_width(width);
+    }
 }
 
 uint32_t sd_card_reset()
@@ -596,11 +601,11 @@ static void send_cmd12()
     sd_send_cmd(cmd);
 }
 
-// Voltage switch for MMC cards
+// Voltage switch for MMC cards 
 // Arg is OCR see P128 of JEDEC std 4.41
 static void send_cmd11()
 {
-
+    
     struct sdio_cmd cmd;
 
     memset(&cmd, 0, sizeof(cmd));
@@ -647,7 +652,7 @@ uint32_t sdcard_init_automaton()
         case SD_IDLE:
           switch(lastcom ) {
             case 0:
-              // Reinit the card
+              // Reinit the card 
               g_sd_card.send_if=0;
               //if (CS is asserted) //SPI operation Mode
               sd_cmd8();      //SD_SEND_IF_COND
@@ -665,7 +670,7 @@ uint32_t sdcard_init_automaton()
                 printf("Card does not support Voltage or is MMC\n");
                 sdio_set_timeout(0xfffffff);
                 g_sd_card.state = SD_ACMD41;
-                send_acmd41();  //check if ACMD41 is answered
+                send_acmd41();  //check if ACMD41 is answered 
                                 //if no card must be mmc
               } else if (tmp & SDIO_FLAG_CMDREND) {
                 //FIXME: check for compatible voltage
@@ -685,9 +690,9 @@ uint32_t sdcard_init_automaton()
                         */
                 g_sd_card.state = SD_ACMD41;
                 send_acmd41();  //p29 set timeout > 1s
-                break;
-              case 55: /*
-                        we reach here if we detected multimedia and last CMD returned
+                break;                
+              case 55: /* 
+                        we reach here if we detected multimedia and last CMD returned 
                         busy or host has omitted voltage (we did not)
                         just retry
                       */
@@ -717,7 +722,7 @@ uint32_t sdcard_init_automaton()
             g_sd_card.sd_or_mmc=0;//We detected an MMC card
             g_sd_card.state = SD_IDLE;
             break;
-            //return mmc_init_automaton();
+            //return mmc_init_automaton();    
           }        //
           if ((*r_CORTEX_M_SDIO_CMD & 0x3f) == 55)    //CMD55)
           {
@@ -768,7 +773,7 @@ uint32_t sdcard_init_automaton()
             }
             break;
           }
-          break;
+          break;  
         case SD_IDENT:
           switch (lastcom) {
             case 11:
@@ -863,6 +868,27 @@ static inline void handle_mmc_sleep(const uint32_t lastcom)
  transition function as follow
           CMD7 -> SD_TRAN
           CMD4,9,10,3 -> SD_STBY
+                saver1 = sdic_hw_get_short_resp();
+*/
+
+static inline void handle_mmc_sleep(const uint32_t lastcom)
+{
+    //What is the reason for awaking in this state
+    switch (lastcom) {
+        case 5:               
+            g_sd_card.state = SD_STBY;
+            break;
+        default:
+            //TODO: error checking here
+            printf("illegal command while in SD_STBY");
+    }
+}
+
+/*
+ SD_IDLE state : P33 SD spec
+ transition function as follow 
+          CMD7 -> SD_TRAN
+          CMD4,9,10,3 -> SD_STBY
 */
 
 static inline void handle_sd_stby(const uint32_t lastcom)
@@ -890,6 +916,18 @@ static inline void handle_sd_stby(const uint32_t lastcom)
     }
 }
 
+/*
+ MMC_WaitIRQ state : P61 MMC spec
+ transition function as follow 
+          No IRQ deteted -> SD_STBY
+          card IRQ -> SD_STBY
+*/
+
+static inline void handle_mmc_wait_IRQ(const __attribute__((unused)) uint32_t lastcom)
+{
+    //What is the reason for awaking in this state
+  g_sd_card.state = SD_STBY; //not implemented yet
+}
 
 /*
  MMC_WaitIRQ state : P61 MMC spec
@@ -1008,7 +1046,24 @@ static inline int handle_sd_tran(const uint32_t lastcom, uint32_t * nevents)
             }
         case 26:
         case 27:
-        case 42:
+        case 42: // LOCK UNLOCK COMMAND
+            if (sd_getflags(SDIO_FLAG_CMDREND)) {
+                saver1 = sdio_hw_get_short_resp();
+                printf("CMDREND\n");
+                sd_launch_dma(0);//enable DPSM 
+                //sdio_launch_dma(0);//enable DPSM 
+                  
+                if (sd_getflags(SDIO_FLAG_DATA))        //Have the data transfer
+                    //also ended?
+                    (*nevents)++;
+            }
+            if (sd_getflags(SDIO_FLAG_DATA)){
+
+              /*Fixme : error handling*/ 
+            }
+          break;
+
+              
         case 49:
         case 56:               //w
         case 59:
@@ -1176,6 +1231,39 @@ uint32_t sd_data_transfer_automaton()
     return err;
 }
 
+static void prepare_transfer_customblock(dma_dir_t dir, uint32_t * buffer, uint32_t buf_len, uint32_t log2_blocksize)
+{
+    uint8_t ret = 0;
+
+    if (dir == PERIPHERAL_TO_MEMORY) {
+        dma.in_addr = (volatile physaddr_t) sdio_get_data_addr();
+        dma.out_addr = (physaddr_t) buffer;
+        dma.size = buf_len;
+        dma.dir = PERIPHERAL_TO_MEMORY;
+    } else {
+        dma.in_addr = (physaddr_t) buffer;
+        dma.out_addr = (volatile physaddr_t) sdio_get_data_addr();
+        dma.size = buf_len;
+        dma.dir = MEMORY_TO_PERIPHERAL;
+    }
+    if (ret != 0) {
+        goto err;
+    }
+
+    if (dir == PERIPHERAL_TO_MEMORY) {
+        sdio_prepare_dma(SDIO_READ_TIMEOUT, buf_len, log2_blocksize);
+        sd_launch_dma(1);
+        /* We launch the DMA transfer right now for reading */
+    } else {
+        sdio_prepare_dma(SDIO_WRITE_TIMEOUT, buf_len, log2_blocksize);
+        /* for writing operation, DMA tranfer is to
+           be launched after CMDREND is asserted, not now */
+    }
+    return;
+ err:
+    printf("Unable to reconfigure DMA ! : %s\n", strerror(ret));
+}
+
 static void prepare_transfer(dma_dir_t dir, uint32_t * buffer, uint32_t buf_len)
 {
     uint8_t ret = 0;
@@ -1277,6 +1365,158 @@ uint8_t sd_early_init(void)
     }
     return ret;
 }
+static void prepare_transfer_nodma(dma_dir_t dir, uint32_t __attribute__((unused)) *buffer, uint32_t buf_len)
+{
+    if (dir == PERIPHERAL_TO_MEMORY) {
+        sdio_prepare_nodma(SDIO_READ_TIMEOUT, buf_len, 9);
+    } else {
+        sdio_prepare_nodma(SDIO_WRITE_TIMEOUT, buf_len, 9);
+    }
+    return;
+}
+
+static void send_cmd42_nodma(uint8_t __attribute__((unused)) *block, uint32_t __attribute__((unused))blocklen)
+{
+    struct sdio_cmd cmd;
+
+    memset(&cmd, 0, sizeof(cmd));
+    g_sd_card.status_reg = 0;
+    cmd.cmd_value = 42;
+    cmd.arg=0x00;
+    cmd.response = SHORT_RESP;
+    prepare_transfer_nodma(MEMORY_TO_PERIPHERAL,(uint32_t*)block,blocklen);
+
+    sd_send_cmd(cmd);        
+    
+}
+static void send_cmd42(uint8_t *block, uint32_t blocklen)
+{
+    struct sdio_cmd cmd;
+    memset(&cmd, 0, sizeof(cmd));
+    g_sd_card.status_reg = 0;
+    cmd.cmd_value = 42;
+    cmd.arg=0x00;
+    cmd.response = SHORT_RESP;
+    prepare_transfer(MEMORY_TO_PERIPHERAL,(uint32_t*)block,blocklen);
+
+    sd_send_cmd(cmd);        
+    
+}
+  uint8_t block[512];
+void sd_clear_password(uint8_t* oldpwd, uint8_t oldlen,
+                      uint8_t *pwd, uint8_t len)
+{
+  //the card shall be selected before calling this function
+  //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
+  sd_set_block_len(512);
+
+  //wait for completion
+  while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
+
+  //prepare_block(block,oldpwd,oldlen,pwd,len);//
+  memset(block,0,sizeof(block));
+  block[0]=0x2; // means set password and lock the card
+  //block[0]=0x5; // means set password and lock the card
+  block[1]=oldlen+len; 
+  
+  for(int i=0;i<oldlen;i++)//first old password
+    block[i+2]=oldpwd[i];
+
+  for(int i=0;i<len;i++) //next new password
+    block[i+2+oldlen]=pwd[i];
+  send_cmd42(block, sizeof(block));
+  while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL|SDIO_FLAG_DCRCFAIL|SDIO_FLAG_DTIMEOUT|SDIO_FLAG_DBCKEND));
+  printf("savestatus %x r1 %x\n",savestatus, saver1);
+while(savestatus);
+  //Error checking
+  /*FIXME*/
+}
+
+void sd_set_password(uint8_t* oldpwd, uint8_t oldlen,
+                      uint8_t *pwd, uint8_t len)
+{
+  //uint8_t block[512];
+  //the card shall be selected before calling this function
+  //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
+  sd_set_block_len(2+oldlen+len);
+  //*((uint32_t*)(0x40012c2c))=0x31;
+  //wait for completion
+  while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
+
+  //prepare_block(block,oldpwd,oldlen,pwd,len);//
+  memset(block,0,sizeof(block));
+  block[0]=0x2; // means clear password and lock the card
+  //block[0]=0x5; // means set password and lock the card
+  block[1]=oldlen+len; 
+  
+  for(int i=0;i<oldlen;i++)//first old password
+    block[i+2]=oldpwd[i];
+
+  for(int i=0;i<len;i++) //next new password
+    block[i+2+oldlen]=pwd[i];
+  //send_cmd42(block, 2+oldlen+len /*sizeof(block)*/);
+  //send_cmd42(block, (2+oldlen+len)+(((2+oldlen+len)&0x3)?4-((2+oldlen+len)&0x3):0));
+  //send_cmd42(block, (2+oldlen+len));
+  send_cmd42(block, sizeof(block));
+  while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
+  //sdio_hw_write_fifo((uint32_t*)block,(2+oldlen+len+3)/4);
+  //sdio_hw_write_fifo((uint32_t*)block,sizeof(block)/4);
+  while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL|SDIO_FLAG_DCRCFAIL|SDIO_FLAG_DTIMEOUT|SDIO_FLAG_DBCKEND|SDIO_FLAG_DATAEND));
+  printf("locking done savestatus %x r1 %x\n",savestatus, saver1);
+  //Error checking
+  /*FIXME*/
+}
+void sd_unlock_card(uint8_t *pwd,uint8_t len)
+{
+  //uint8_t block[512];
+  //the card shall be selected before calling this function
+  //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
+  sd_set_block_len(len+2);
+
+  //wait for completion
+  while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
+  
+  memset(block,0,sizeof(block));
+  block[0]=0x0;// means unlock the card
+  block[1]=len; 
+
+  for(int i=0;i<len;i++) //next new password
+    block[i+2]=pwd[i];
+  printf("je te passe %x\n",len+(4-(len&0x3)));
+  //send_cmd42(block,len+(4-(len&0x3)));
+  send_cmd42(block,sizeof(block));
+  //send_cmd42(block,sizeof(block));
+  while(!sd_getflags(SDIO_FLAG_DTIMEOUT | SDIO_FLAG_DCRCFAIL | SDIO_FLAG_DBCKEND));
+  //Error checking
+
+}
+void sdio_hw_write_fifo(uint32_t * buf, uint32_t size);
+void sd_forceerase_card()
+{
+  //uint8_t block[512];
+  //the card shall be selected before calling this function
+  //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
+  sd_set_block_len(1);
+
+  //wait for completion
+  while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
+  
+  memset(block,0x08,sizeof(block));
+  block[0]=0x08;// means unlock the card
+
+  //sdio_hw_write_fifo((uint32_t*)block,1);
+  send_cmd42(block,sizeof(block));
+  while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
+   
+  while(!sd_getflags(SDIO_FLAG_DTIMEOUT | SDIO_FLAG_DCRCFAIL | SDIO_FLAG_DBCKEND));
+  do {
+    send_cmd13_card();
+  } while (!(g_sd_card.status_reg >> 8 & 1));
+
+  //Error checking
+
+}
+
 
 uint32_t sd_init(void)
 {
@@ -1317,15 +1557,24 @@ uint32_t sd_init(void)
     }
     get_csd_sync();
     select_card_sync();
-    set_bus_width_sync(4);
-
     g_sd_card.state = SD_TRAN;
+
     //
     //when we reach here card is initialized AND in STBY state!
     //
     /* Register our handler */
     ADD_LOC_HANDLER(sd_data_transfer_automaton)
     sdio_set_irq_handler(sd_data_transfer_automaton);
+    set_bus_width_sync(4);
+    //sd_forceerase_card();
+#if 1 //|| defined(SD_PASSWD)
+    //sd_clear_password((uint8_t*)"tamere",6,(uint8_t*)"tamere",0);
+    //sd_set_password((uint8_t*)"tamere",6,(uint8_t*)"tamere",0);
+    //sd_unlock_card((uint8_t*)"tamere",6);
+    //sys_cfg(CFG_DMA_DISABLE,dma_descriptor);
+#endif
+    sd_set_block_len(512);
+    
  out:
     return err;
 }
