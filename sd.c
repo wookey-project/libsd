@@ -459,6 +459,7 @@ static void set_bus_width_sync(uint8_t width)
     }
     if (!localretries) {
         printf("cannot set bus width\n");
+        g_sd_card.ACMD=0;//reset an eventual flag ACMD 
         g_sd_card.bus_width = 1;
         sdio_hw_set_bus_width(1);
     }
@@ -536,6 +537,7 @@ static void _send_acmd41()
 {
     struct sdio_cmd cmd;
 
+    printf("_send_acmd41 %x\n",SD_SEND_OP_COND);
     memset(&cmd, 0, sizeof(cmd));
     cmd.cmd_value = SD_SEND_OP_COND;
     //HOST CAPACITY SUPPORT (1 means HC and XC supported)
@@ -1053,9 +1055,9 @@ static inline int handle_sd_tran(const uint32_t lastcom, uint32_t * nevents)
                 sd_launch_dma(0);//enable DPSM 
                 //sdio_launch_dma(0);//enable DPSM 
                   
-                if (sd_getflags(SDIO_FLAG_DATA))        //Have the data transfer
-                    //also ended?
-                    (*nevents)++;
+             //   if (sd_getflags(SDIO_FLAG_DATA))        //Have the data transfer
+             //       //also ended?
+             //       (*nevents)++;
             }
             if (sd_getflags(SDIO_FLAG_DATA)){
 
@@ -1187,6 +1189,7 @@ uint32_t sd_data_transfer_automaton()
     //CF: Page 35 STM-RM00090
     if (lastcom == 55)          //CMD_ACMD
     {
+        printf("ICI ACMD\n");
         g_sd_card.ACMD = 1;
         return 0;
     }
@@ -1402,7 +1405,7 @@ static void send_cmd42(uint8_t *block, uint32_t blocklen)
     sd_send_cmd(cmd);        
     
 }
-  uint8_t block[512];
+uint8_t block[512];
 void sd_clear_password(uint8_t* oldpwd, uint8_t oldlen,
                       uint8_t *pwd, uint8_t len)
 {
@@ -1438,15 +1441,16 @@ void sd_set_password(uint8_t* oldpwd, uint8_t oldlen,
   //uint8_t block[512];
   //the card shall be selected before calling this function
   //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
-  sd_set_block_len(2+oldlen+len);
+  //sd_set_block_len(2+oldlen+len);
+  sd_set_block_len(512);
   //*((uint32_t*)(0x40012c2c))=0x31;
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
 
   //prepare_block(block,oldpwd,oldlen,pwd,len);//
   memset(block,0,sizeof(block));
-  block[0]=0x2; // means clear password and lock the card
-  //block[0]=0x5; // means set password and lock the card
+  //block[0]=0x2; // means clear password and lock the card
+  block[0]=0x5; // means set password and lock the card
   block[1]=oldlen+len; 
   
   for(int i=0;i<oldlen;i++)//first old password
@@ -1471,7 +1475,8 @@ void sd_unlock_card(uint8_t *pwd,uint8_t len)
   //uint8_t block[512];
   //the card shall be selected before calling this function
   //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
-  sd_set_block_len(len+2);
+  //sd_set_block_len(len+2);
+  sd_set_block_len(512);
 
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
@@ -1496,7 +1501,7 @@ void sd_forceerase_card()
   //uint8_t block[512];
   //the card shall be selected before calling this function
   //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
-  sd_set_block_len(1);
+  sd_set_block_len(512);
 
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
@@ -1557,6 +1562,9 @@ uint32_t sd_init(void)
     }
     get_csd_sync();
     select_card_sync();
+    print_csd_v2((sd_csd_v2_t*)&g_sd_card.csd);
+    printf("\ng_sd_card.cid\n");
+    print_cid((sd_cid_t*)&g_sd_card.cid);
     g_sd_card.state = SD_TRAN;
 
     //
@@ -1565,14 +1573,19 @@ uint32_t sd_init(void)
     /* Register our handler */
     ADD_LOC_HANDLER(sd_data_transfer_automaton)
     sdio_set_irq_handler(sd_data_transfer_automaton);
-    set_bus_width_sync(4);
     //sd_forceerase_card();
 #if 1 //|| defined(SD_PASSWD)
-    //sd_clear_password((uint8_t*)"tamere",6,(uint8_t*)"tamere",0);
-    //sd_set_password((uint8_t*)"tamere",6,(uint8_t*)"tamere",0);
-    //sd_unlock_card((uint8_t*)"tamere",6);
+   // sd_clear_password((uint8_t*)"tamere",6,(uint8_t*)"tamere",0);
+    if (!(saver1 && (1<<25))) //Card is unlocked and no unlock operation 
+                            //undertaken so far
+    {
+        printf("No passwd set, I will lock card with a password\n");
+        sd_set_password((uint8_t*)"tamere",0,(uint8_t*)"tamere",6);
+    }
+    sd_unlock_card((uint8_t*)"tamere",6);
     //sys_cfg(CFG_DMA_DISABLE,dma_descriptor);
 #endif
+    set_bus_width_sync(4);
     sd_set_block_len(512);
     
  out:
