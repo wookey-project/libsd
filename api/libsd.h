@@ -40,6 +40,8 @@ uint32_t sd_get_block_number(void);
 
 uint32_t sd_get_capacity(void);
 
+uint8_t sd_get_cid(uint32_t **cid_p, uint32_t *cid_len);
+
 extern volatile uint8_t sd_error;
 extern uint32_t saver1;
 extern uint32_t savestatus;
