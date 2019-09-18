@@ -81,6 +81,18 @@ static uint32_t sd_getflags(uint32_t mask)
 /*
  * Queue of commands
  */
+static void print_cid(sd_cid_t * cid)
+{
+    printf("reserved0: %d\n", cid->reserved0);
+    printf("crc: %x\n", cid->crc);
+    printf("mdt: %x\n", cid->mdt);
+    printf("reserved20: %d\n", cid->reserved20);
+    printf("psn: %x\n", cid->psn);
+    printf("prv: %x\n", cid->prv);
+    printf("pnm: %lx\n", cid->pnm);
+    printf("oid: %x\n",cid->oid);
+    printf("mid: %x\n",cid->mid);
+}
 
 static void print_csd_v2(sd_csd_v2_t * csd)
 {
@@ -125,13 +137,13 @@ static int8_t sd_send_cmd(struct sdio_cmd cmd)
     return 0;
 }
 
-static void sd_set_block_len(void)
+static void sd_set_block_len(uint32_t blocksize)
 {
     struct sdio_cmd cmd;
 
     memset(&cmd, 0, sizeof(cmd));
     cmd.cmd_value = SD_SET_BLOCKLEN;
-    cmd.arg = BLOCK_SIZE;
+    cmd.arg = blocksize;
     cmd.response = SHORT_RESP;
     sd_send_cmd(cmd);
 }
@@ -229,6 +241,19 @@ uint32_t sd_get_capacity(void)
             ((uint32_t) ((volatile sd_csd_v2_t *) (&g_sd_card.csd))->c_size);
         return ((c_size + 1) * 1024);
     }
+}
+
+
+uint8_t sd_get_cid(uint32_t **cid_p, uint32_t *cid_len)
+{
+    if (cid_p == NULL || cid_len == NULL) {
+        return 1;
+    }
+
+    *cid_p = (uint32_t*)&g_sd_card.cid; /* cid data access */
+    *cid_len = 16; /* ... in bytes */
+
+    return 0;
 }
 
 /*
@@ -570,9 +595,41 @@ static void send_cmd12()
     sd_send_cmd(cmd);
 }
 
+// Voltage switch for MMC cards
+// Arg is OCR see P128 of JEDEC std 4.41
 static void send_cmd11()
 {
-    //nothing yet implemented
+
+    struct sdio_cmd cmd;
+
+    memset(&cmd, 0, sizeof(cmd));
+    cmd.cmd_value = 11;         //MMC_VOLTAGE_SWITCH;
+    cmd.arg = 0x1ff<<15|2<<29;  //OCR indicating only 2.7-3.6 voltage range & sector
+                                //   mode access
+    cmd.response = SHORT_RESP;
+    sdio_wait_for(SDIO_FLAG_CMD_RESP);
+    sd_send_cmd(cmd);
+}
+static void send_cmd1()
+{
+    struct sdio_cmd cmd;
+
+    memset(&cmd, 0, sizeof(cmd));
+    cmd.cmd_value = 1;         //MMC_SEND_OP_COND;
+    cmd.arg = 0;                //Stuff bits
+    cmd.response = SHORT_RESP;
+    sdio_wait_for(SDIO_FLAG_CMD_RESP);
+    sd_send_cmd(cmd);
+}
+uint32_t mmc_init_automaton()
+{
+//This is a MultimediaCard skip CMD11 and go CMD2
+//We start as in CMD1 as stated in SD SPEC 4.1 p41
+printf("card does not support voltage\n");
+g_sd_card.state = SD_IDLE;
+sdio_set_timeout(0xfffffff);
+send_cmd1();    //SEND_ALL_CID
+return 1;
 }
 
 /*
@@ -582,99 +639,163 @@ static void send_cmd11()
 uint32_t sdcard_init_automaton()
 {
     uint32_t err = 0, tmp = 0;
+    uint32_t lastcom = (*r_CORTEX_M_SDIO_CMD & 0x3f);
 
     switch (g_sd_card.state) {
 
         case SD_IDLE:
-            if (!g_sd_card.send_if) {
-                g_sd_card.state = SD_CMD8;
-                sd_cmd8();      //SD_SEND_IF_COND
-            } else {
-                g_sd_card.state = SD_ACMD41;
-                send_acmd41();  //p29 set timeout > 1s
-            }
-            break;
-        case SD_CMD8:          //SEND_IF_COND
-            tmp = sd_r7_response();
-            if (tmp & SDIO_FLAG_CCRCFAIL) {
+          switch(lastcom ) {
+            case 0:
+              // Reinit the card
+              g_sd_card.send_if=0;
+              //if (CS is asserted) //SPI operation Mode
+              sd_cmd8();      //SD_SEND_IF_COND
+              break;
+            case 8:          //SEND_IF_COND
+              tmp = sd_r7_response();
+              if (tmp & SDIO_FLAG_CCRCFAIL) {
                 err = 1;        //Card is unworkable
                 break;
-            }
-            if ((tmp & SDIO_FLAG_CTIMEOUT)) {
+              }
+              if ((tmp & SDIO_FLAG_CTIMEOUT)) {
                 //FIXME: what to do if card does not support voltage?
                 g_sd_card.hcs = 0;
-                printf("Card does not support Voltage\n");
-            } else if (tmp & SDIO_FLAG_CMDREND) {
+                g_sd_card.state=SD_IDLE;
+                printf("Card does not support Voltage or is MMC\n");
+                sdio_set_timeout(0xfffffff);
+                g_sd_card.state = SD_ACMD41;
+                send_acmd41();  //check if ACMD41 is answered
+                                //if no card must be mmc
+              } else if (tmp & SDIO_FLAG_CMDREND) {
                 //FIXME: check for compatible voltage
                 g_sd_card.ack_voltage = 1;
                 g_sd_card.hcs = 1;      //FIXME macro SD_BOARD_HCS;
-                g_sd_card.send_if = 1;
-                g_sd_card.state = SD_IDLE;
+                sdio_set_timeout(0xfffffff);
+                g_sd_card.state = SD_ACMD41;
+                send_acmd41();  //p29 set timeout > 1s
                 err = 1;
-            } else {
+              } else {
                 __asm__ volatile ("bkpt\n");
-            }
-            break;              //go back to idle state
-        case SD_ACMD41:
-            if (sd_getflags(SDIO_FLAG_CTIMEOUT))
-                printf("MMC Cards not supported card!");        //
-            if ((*r_CORTEX_M_SDIO_CMD & 0x3f) == 55)    //CMD55)
-            {
-                //got the CMD_APP_CMD response
-                _send_acmd41();
+              }
+              break;
+              case 41: /* we get here if card have returned BUSY fo last ACMD41
+                       * Or host omitted voltage (we did not)
+                       * just retry
+                        */
+                g_sd_card.state = SD_ACMD41;
+                send_acmd41();  //p29 set timeout > 1s
                 break;
-            }
-            if (sd_getflags(SDIO_FLAG_CCRCFAIL))
-                //Command CRCfail because response is OCR
-            {
-                if (!sd_r3_busy()) {
-                    g_sd_card.state = SD_IDLE;
-                } else {
-                    if (g_sd_card.ack_voltage) {
-                        g_sd_card.state = SD_READY;
-                        g_sd_card.version = 1;  //FIXME add enum
-                        g_sd_card.ccs = sd_r3_ccs();    //CCS = Card Capacity status
-                        g_sd_card.s18a = 0;
-                        //FIXME : as we set s18r to 0 this field is always 0
-                    } else {
-                        //Ver 1.X Standard Capacity SD Memorycard
-                        g_sd_card.ccs = 0;
-                        g_sd_card.version = 0;  //FIXME add enum
-                    }
-                    /* Right after ACMD 41, clock can be upper than 400kHz */
-                    sdio_hw_set_clock_divisor(-1);
+              case 55: /*
+                        we reach here if we detected multimedia and last CMD returned
+                        busy or host has omitted voltage (we did not)
+                        just retry
+                      */
+                printf("ACMD41 Failed in timeout\n");
+                  g_sd_card.state=SD_READY;
+                  send_cmd1();
+                  break;
+              case 1:
+                  /* CMD1 returned busy
+                  *  just retry
+                  */
 
-                    if (g_sd_card.s18r && g_sd_card.s18a) {
-                        printf
-                            ("wrong path ! voltage switch impossible with wookey!");
-                        send_cmd11();   //Voltage switch
-                    } else {
-                        g_sd_card.state = SD_CMD2;
-                        sdio_set_timeout(0xfffffff);
-                        send_cmd2();    //SEND_ALL_CID
-                    }
-                }
+                printf("CMD1 Failed in timeout\n");
+                  g_sd_card.state=SD_READY;
+                send_cmd1();   //Voltage switch
+
+                  break;
+
+          }
+          break;              //go back to idle state
+        case SD_ACMD41:
+          if (sd_getflags(SDIO_FLAG_CTIMEOUT)){
+            /*
+             * the card must be mmc card follow mmc init automaton at CMD1
+             * as stated in SD SPEC 4.1 p41
+             */
+            g_sd_card.sd_or_mmc=0;//We detected an MMC card
+            g_sd_card.state = SD_IDLE;
+            break;
+            //return mmc_init_automaton();
+          }        //
+          if ((*r_CORTEX_M_SDIO_CMD & 0x3f) == 55)    //CMD55)
+          {
+            //got the CMD_APP_CMD response
+            g_sd_card.sd_or_mmc=1;//We detected an MMC card
+            g_sd_card.state = SD_READY;
+            _send_acmd41();
+          }
+          else {
+              //busy ? retry
+                printf("je passe ici\n");
+                send_acmd41();  //p29 set timeout > 1s
+          }
+          break;
+        case SD_READY:
+          if (sd_getflags(SDIO_FLAG_CTIMEOUT)){
+            printf("timeout while in SD_READY\n");
+          }
+          if (sd_getflags(SDIO_FLAG_CCRCFAIL))
+            //Command CRCfail because response is OCR
+          {
+            if (!sd_r3_busy()) {
+              g_sd_card.state = SD_IDLE;
+            } else {
+              if (g_sd_card.ack_voltage) {
+                //g_sd_card.state = SD_READY;
+                g_sd_card.version = 1;  //FIXME add enum
+                g_sd_card.ccs = sd_r3_ccs();    //CCS = Card Capacity status
+                g_sd_card.s18a = 0;
+                //FIXME : as we set s18r to 0 this field is always 0
+              } else {
+                //Ver 1.X Standard Capacity SD Memorycard
+                g_sd_card.ccs = 0;
+                g_sd_card.version = 0;  //FIXME add enum
+              }
+              /* Right after ACMD 41, clock can be upper than 400kHz */
+              sdio_hw_set_clock_divisor(-1);
+
+              if (g_sd_card.s18r && g_sd_card.s18a) {
+                printf
+                  ("wrong path ! voltage switch impossible with wookey!");
+                send_cmd11();   //Voltage switch
+              } else {
+                g_sd_card.state = SD_IDENT;
+                sdio_set_timeout(0xfffffff);
+                send_cmd2();    //SEND_ALL_CID
+              }
             }
             break;
-        case SD_CMD11:
-            g_sd_card.state = SD_CMD2;
-            send_cmd2();
-            break;
-        case SD_CMD2:          //ALL_SEND_CID
-            err = 0;            //FIXME error handling
-            if (sd_getflags(SDIO_FLAG_CTIMEOUT)) {
+          }
+          break;
+        case SD_IDENT:
+          switch (lastcom) {
+            case 11:
+              send_cmd2();
+              break;
+            case 2:          //ALL_SEND_CID
+              err = 0;            //FIXME error handling
+              if (sd_getflags(SDIO_FLAG_CTIMEOUT)) {
                 err = -1;
-            }
-            if (sd_getflags(SDIO_FLAG_CCRCFAIL)) {
+              }
+              if (sd_getflags(SDIO_FLAG_CCRCFAIL)) {
                 err = -1;
-            }
-            if (sd_getflags(SDIO_FLAG_CMDREND)) {
+              }
+              if (sd_getflags(SDIO_FLAG_CMDREND)) {
+                /*
+                * get Long response and store the CID
+                */
+                sdio_hw_get_long_resp(&g_sd_card.cid);
+
                 g_sd_card.state = SD_STBY;
                 send_cmd3();
-            }
-            break;
+              }
+              break;
+          }
+          break;
+
         default:
-            printf("unexecpted state\n");
+          printf("unexecpted state %d\n",g_sd_card.state);
     }
     return err;
 }
@@ -710,6 +831,7 @@ void handle_send_status()
         uint8_t card_state;
         uint32_t resp = sdio_hw_get_short_resp();
 
+        saver1=resp;
         g_sd_card.status_reg = resp;
         card_state = (resp & CARD_STATUS_CURRENT_STATE) >> 9;
     }
@@ -717,7 +839,28 @@ void handle_send_status()
 
 /*
  SD_IDLE state : P33 SD spec
- transition function as follow 
+ transition function as follow
+          CMD7 -> SD_TRAN
+          CMD4,9,10,3 -> SD_STBY
+                saver1 = sdic_hw_get_short_resp();
+*/
+
+static inline void handle_mmc_sleep(const uint32_t lastcom)
+{
+    //What is the reason for awaking in this state
+    switch (lastcom) {
+        case 5:
+            g_sd_card.state = SD_STBY;
+            break;
+        default:
+            //TODO: error checking here
+            printf("illegal command while in SD_STBY");
+    }
+}
+
+/*
+ SD_IDLE state : P33 SD spec
+ transition function as follow
           CMD7 -> SD_TRAN
           CMD4,9,10,3 -> SD_STBY
 */
@@ -739,16 +882,30 @@ static inline void handle_sd_stby(const uint32_t lastcom)
             break;
         case 10:
             break;
+        case 39://MMC CMD
+            break;
         default:
             //TODO: error checking here
             printf("illegal command while in SD_STBY");
     }
 }
 
+/*
+ MMC_WaitIRQ state : P61 MMC spec
+ transition function as follow
+          No IRQ deteted -> SD_STBY
+          card IRQ -> SD_STBY
+*/
+
+static inline void handle_mmc_wait_IRQ(const __attribute__((unused)) uint32_t lastcom)
+{
+    //What is the reason for awaking in this state
+  g_sd_card.state = SD_STBY; //not implemented yet
+}
 
 /*
  SD_TRAN state : P33 SD spec
- transition function as follow 
+ transition function as follow
           CMD6,17,18,19,30,48,56(r),58 or ACMD13,22,51 -> SD_DATA
           CMD16,23,32,33 or ACMD6,42,23-> SD_tran
           CMD24,25,26,27,42,49,56(w),59 -> SD_RCV
@@ -788,7 +945,6 @@ static inline int handle_sd_tran(const uint32_t lastcom, uint32_t * nevents)
                 if (sd_getflags(SDIO_FLAG_DATA))        //Have the data transfer
                     //also ended?
                     (*nevents)++;
-                break;
             } else {
                 //Something went wrong during the command send
                 //let us report the anomaly
@@ -796,8 +952,8 @@ static inline int handle_sd_tran(const uint32_t lastcom, uint32_t * nevents)
                 sd_error = SD_ERROR;
                 err = -1;
 #endif
-                break;
             }
+            break;
         case 19:
         case 30:
         case 48:
@@ -873,10 +1029,10 @@ static inline int handle_sd_tran(const uint32_t lastcom, uint32_t * nevents)
 
 /*
  SD_RCV state : P33 SD spec
- transition function as follow 
+ transition function as follow
           CMD12 -> SD_PRG
           tranfer end -> SD_PRG
-                In our understanding this operation complete can only occur for CMD24 
+                In our understanding this operation complete can only occur for CMD24
                 (write single block)
 */
 static inline void handle_sd_rcv(const uint32_t lastcom, uint32_t * nevents)
@@ -894,7 +1050,7 @@ static inline void handle_sd_rcv(const uint32_t lastcom, uint32_t * nevents)
 
 /*
  SD_DATA state : P33 SD spec
- transition function as follow 
+ transition function as follow
           CMD12 -> SD_TRAN
           CMD7 -> SD_STBY
           opration complete -> SD_TRAN
@@ -921,7 +1077,7 @@ static inline void handle_sd_data(const uint32_t lastcom)
 
 /*
  SD_PRG state : P33 SD spec
- transition function as follow 
+ transition function as follow
           CMD12 -> SD_TRAN
           CMD7 -> SD_STBY
           operation complete -> SD_TRAN
@@ -941,7 +1097,7 @@ static inline void handle_sd_prg(const uint32_t lastcom)
 
 /*
  SD_DIS state : P33 SD spec
- transition function as follow 
+ transition function as follow
           CMD7 -> SD_SD_PRG
           operation complete -> SD_STBY
 */
@@ -1128,6 +1284,8 @@ uint32_t sd_init(void)
     memset((void *) &g_sd_card, 0, sizeof(g_sd_card));
     g_sd_card.bus_width = 1;
 
+    //assume that the card is an sd_card
+    g_sd_card.sd_or_mmc=1;// 1 means SD
     sdio_init();
 // From whatever state we are coming for perform a card reset and go to IDLE STATE
     err = sd_card_reset();

@@ -77,7 +77,7 @@ void    sd_flush_commands(void);
 #define SD_APP_CMD			55
 
 /* Application commands */
-#define ACMD(cmd)			(0x80 | (cmd))
+#define ACMD(cmd)			(0x80000000 | (cmd))
 #define SD_SET_BUS_WIDTH_idx		6
 //# define SD_SET_BUS_WIDTH     ACMD(SD_SET_BUS_WIDTH_idx)
 #define SD_SET_BUS_WIDTH		SD_SET_BUS_WIDTH_idx
@@ -200,6 +200,18 @@ typedef struct __packed {
     uint8_t csd_structure:2;
 } sd_csd_v2_t;
 
+typedef struct __packed sd_cid {
+    uint8_t reserved0:1;
+    uint8_t crc:7;
+    uint16_t mdt:12;
+    uint16_t reserved20:4;
+    uint32_t psn;
+    uint8_t prv;
+    uint64_t pnm:40;
+    uint64_t oid:16;
+    uint64_t mid:8;
+} sd_cid_t;
+
 enum sd_state {
     SD_IDLE = 0,
     SD_READY,
@@ -228,6 +240,7 @@ static volatile struct {
     uint8_t send_if:1;
     uint8_t ack_voltage:1;
     uint8_t ACMD:1;
+    uint8_t sd_or_mmc:1;
     volatile enum sd_state state;
     struct sd_csd_v1 csd;
     uint8_t bus_width;
@@ -235,6 +248,7 @@ static volatile struct {
     uint8_t error;
     struct sdio_cmd last_cmd;
     uint32_t status_reg;
+    struct sd_cid cid;
 
 } g_sd_card;
 
