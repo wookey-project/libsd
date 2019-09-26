@@ -844,26 +844,6 @@ void handle_send_status()
         card_state = (resp & CARD_STATUS_CURRENT_STATE) >> 9;
     }
 }
-/*
- SD_IDLE state : P33 SD spec
- transition function as follow
-          CMD7 -> SD_TRAN
-          CMD4,9,10,3 -> SD_STBY
-                saver1 = sdic_hw_get_short_resp();
-*/
-
-static inline void handle_mmc_sleep(const uint32_t lastcom)
-{
-    //What is the reason for awaking in this state
-    switch (lastcom) {
-        case 5:
-            g_sd_card.state = SD_STBY;
-            break;
-        default:
-            //TODO: error checking here
-            printf("illegal command while in SD_STBY");
-    }
-}
 
 /*
  SD_IDLE state : P33 SD spec
@@ -916,19 +896,6 @@ static inline void handle_sd_stby(const uint32_t lastcom)
             //TODO: error checking here
             printf("illegal command while in SD_STBY");
     }
-}
-
-/*
- MMC_WaitIRQ state : P61 MMC spec
- transition function as follow 
-          No IRQ deteted -> SD_STBY
-          card IRQ -> SD_STBY
-*/
-
-static inline void handle_mmc_wait_IRQ(const __attribute__((unused)) uint32_t lastcom)
-{
-    //What is the reason for awaking in this state
-  g_sd_card.state = SD_STBY; //not implemented yet
 }
 
 /*
@@ -1049,15 +1016,17 @@ static inline int handle_sd_tran(const uint32_t lastcom, uint32_t * nevents)
         case 26:
         case 27:
         case 42: // LOCK UNLOCK COMMAND
-            if (sd_getflags(SDIO_FLAG_CMDREND)) {
+            if(!sd_getflags(SDIO_FLAG_DATA)) {
+                if (sd_getflags(SDIO_FLAG_CMDREND)) {
                 saver1 = sdio_hw_get_short_resp();
-                printf("CMDREND\n");
+                //printf("CMDREND %x\n",saver1);
                 sd_launch_dma(0);//enable DPSM 
                 //sdio_launch_dma(0);//enable DPSM 
                   
              //   if (sd_getflags(SDIO_FLAG_DATA))        //Have the data transfer
              //       //also ended?
              //       (*nevents)++;
+            }
             }
             if (sd_getflags(SDIO_FLAG_DATA)){
 
@@ -1103,6 +1072,9 @@ static inline void handle_sd_rcv(const uint32_t lastcom, uint32_t * nevents)
         (*nevents)++;
     } else {
         //FIXME: Error checking here
+            printf
+                ("illegal command while in SD_RCV %x flags %x|\n",
+                 (g_sd_card.ACMD << 31) | lastcom, sd_getflags(0xffffffff));
     }
 }
 
@@ -1130,6 +1102,7 @@ static inline void handle_sd_data(const uint32_t lastcom)
         g_sd_card.state = SD_IDLE;
     } else {
         //FIXME: Error checking here
+        printf("illegal command while in SD_DATA\n");
     }
 }
 
@@ -1149,7 +1122,10 @@ static inline void handle_sd_prg(const uint32_t lastcom)
         //Check that is is our RCA
         g_sd_card.state = SD_DIS;
     } else {
-        //printf("illegal command while in SD_PRG");
+            printf
+                ("illegal command while in SD_PRG %x flags %x|\n",
+                 (g_sd_card.ACMD << 31) | lastcom, sd_getflags(0xffffffff));
+        
     }
 }
 
@@ -1189,7 +1165,6 @@ uint32_t sd_data_transfer_automaton()
     //CF: Page 35 STM-RM00090
     if (lastcom == 55)          //CMD_ACMD
     {
-        printf("ICI ACMD\n");
         g_sd_card.ACMD = 1;
         return 0;
     }
@@ -1226,6 +1201,8 @@ uint32_t sd_data_transfer_automaton()
                 handle_sd_dis(lastcom);
                 break;
             default:
+                printf("Unexpected state!");
+                for(;;);/* do not go any further */
                 break;
 
         }
@@ -1487,7 +1464,6 @@ void sd_unlock_card(uint8_t *pwd,uint8_t len)
 
   for(int i=0;i<len;i++) //next new password
     block[i+2]=pwd[i];
-  printf("je te passe %x\n",len+(4-(len&0x3)));
   //send_cmd42(block,len+(4-(len&0x3)));
   send_cmd42(block,sizeof(block));
   //send_cmd42(block,sizeof(block));
@@ -1562,9 +1538,9 @@ uint32_t sd_init(void)
     }
     get_csd_sync();
     select_card_sync();
-    print_csd_v2((sd_csd_v2_t*)&g_sd_card.csd);
-    printf("\ng_sd_card.cid\n");
-    print_cid((sd_cid_t*)&g_sd_card.cid);
+    //print_csd_v2((sd_csd_v2_t*)&g_sd_card.csd);
+    //printf("\ng_sd_card.cid\n");
+    //print_cid((sd_cid_t*)&g_sd_card.cid);
     g_sd_card.state = SD_TRAN;
 
     //
@@ -1576,12 +1552,15 @@ uint32_t sd_init(void)
     //sd_forceerase_card();
 #if 1 //|| defined(SD_PASSWD)
    // sd_clear_password((uint8_t*)"tamere",6,(uint8_t*)"tamere",0);
+    sd_unlock_card((uint8_t*)"tamere",0);
     if (!(saver1 && (1<<25))) //Card is unlocked and no unlock operation 
                             //undertaken so far
     {
         printf("No passwd set, I will lock card with a password\n");
         sd_set_password((uint8_t*)"tamere",0,(uint8_t*)"tamere",6);
     }
+    else
+      printf("the card is locked I give the pass\n");
     sd_unlock_card((uint8_t*)"tamere",6);
     //sys_cfg(CFG_DMA_DISABLE,dma_descriptor);
 #endif
