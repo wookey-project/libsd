@@ -138,7 +138,7 @@ static int8_t sd_send_cmd(struct sdio_cmd cmd)
     return 0;
 }
 
-static void sd_set_block_len(uint32_t blocksize)
+void sd_set_block_len(uint32_t blocksize)
 {
     struct sdio_cmd cmd;
 
@@ -420,11 +420,12 @@ static void select_card_sync(void)
            (SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND)) ;
 }
 
-static void set_bus_width_sync(uint8_t width)
+uint8_t sd_set_bus_width_sync(uint8_t width)
 {
+    uint8_t err=SD_ERROR;
     /*TODO: check in SCR that we can use 4 wires */
     if (!(width == 4 || width == 1)) {
-        return;                 // FIXME: should be a error return mecha. Do not use assert
+        return err;     // FIXME: should be a error return mecha. Do not use assert
     }
     struct sdio_cmd cmd;
     uint32_t localretries = 0;
@@ -462,12 +463,15 @@ static void set_bus_width_sync(uint8_t width)
         g_sd_card.ACMD=0;//reset an eventual flag ACMD 
         g_sd_card.bus_width = 1;
         sdio_hw_set_bus_width(1);
+        err=SD_ERROR;
     }
     else
     {
       g_sd_card.bus_width = width;
       sdio_hw_set_bus_width(width);
+      err=SD_SUCCESS;
     }
+return err;
 }
 
 uint32_t sd_card_reset()
@@ -1388,7 +1392,7 @@ void sd_clear_password(uint8_t* oldpwd, uint8_t oldlen,
 {
   //the card shall be selected before calling this function
   //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
-  sd_set_block_len(512);
+  //sd_set_block_len(512);
 
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
@@ -1419,7 +1423,7 @@ void sd_set_password(uint8_t* oldpwd, uint8_t oldlen,
   //the card shall be selected before calling this function
   //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
   //sd_set_block_len(2+oldlen+len);
-  sd_set_block_len(512);
+  //sd_set_block_len(512);
   //*((uint32_t*)(0x40012c2c))=0x31;
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
@@ -1430,6 +1434,15 @@ void sd_set_password(uint8_t* oldpwd, uint8_t oldlen,
   block[0]=0x5; // means set password and lock the card
   block[1]=oldlen+len; 
   
+  if(len > 16) {
+    printf("Wrong password length\n");
+    return ;
+  }
+
+  if(oldlen > 16) {
+    printf("Wrong Old password length\n");
+    return ;
+  }
   for(int i=0;i<oldlen;i++)//first old password
     block[i+2]=oldpwd[i];
 
@@ -1453,7 +1466,7 @@ void sd_unlock_card(uint8_t *pwd,uint8_t len)
   //the card shall be selected before calling this function
   //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
   //sd_set_block_len(len+2);
-  sd_set_block_len(512);
+  //sd_set_block_len(512);
 
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
@@ -1461,7 +1474,10 @@ void sd_unlock_card(uint8_t *pwd,uint8_t len)
   memset(block,0,sizeof(block));
   block[0]=0x0;// means unlock the card
   block[1]=len; 
-
+  if(len > 16) {
+    printf("Wrong password length\n");
+    return ;
+  }
   for(int i=0;i<len;i++) //next new password
     block[i+2]=pwd[i];
   //send_cmd42(block,len+(4-(len&0x3)));
@@ -1477,7 +1493,7 @@ void sd_forceerase_card()
   //uint8_t block[512];
   //the card shall be selected before calling this function
   //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
-  sd_set_block_len(512);
+  //sd_set_block_len(512);
 
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
@@ -1549,6 +1565,7 @@ uint32_t sd_init(void)
     /* Register our handler */
     ADD_LOC_HANDLER(sd_data_transfer_automaton)
     sdio_set_irq_handler(sd_data_transfer_automaton);
+#if 0
     //sd_forceerase_card();
 #if 1 //|| defined(SD_PASSWD)
    // sd_clear_password((uint8_t*)"tamere",6,(uint8_t*)"tamere",0);
@@ -1564,9 +1581,15 @@ uint32_t sd_init(void)
     sd_unlock_card((uint8_t*)"tamere",6);
     //sys_cfg(CFG_DMA_DISABLE,dma_descriptor);
 #endif
-    set_bus_width_sync(4);
+    sd_set_bus_width_sync(4);
     sd_set_block_len(512);
+#endif
     
  out:
     return err;
+}
+
+uint8_t sd_is_locked()
+{
+  return !!(saver1&(1<<25));
 }
