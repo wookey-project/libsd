@@ -1387,8 +1387,7 @@ static void send_cmd42(uint8_t *block, uint32_t blocklen)
     
 }
 uint8_t block[512];
-void sd_clear_password(uint8_t* oldpwd, uint8_t oldlen,
-                      uint8_t *pwd, uint8_t len)
+void sd_clear_password(uint8_t* oldpwd, uint8_t oldlen)
 {
   //the card shall be selected before calling this function
   //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
@@ -1399,15 +1398,12 @@ void sd_clear_password(uint8_t* oldpwd, uint8_t oldlen,
 
   //prepare_block(block,oldpwd,oldlen,pwd,len);//
   memset(block,0,sizeof(block));
-  block[0]=0x2; // means set password and lock the card
-  //block[0]=0x5; // means set password and lock the card
-  block[1]=oldlen+len; 
+  block[0]=0x6; // means clear password and unlock the card
+  block[1]=oldlen; 
   
   for(int i=0;i<oldlen;i++)//first old password
     block[i+2]=oldpwd[i];
 
-  for(int i=0;i<len;i++) //next new password
-    block[i+2+oldlen]=pwd[i];
   send_cmd42(block, sizeof(block));
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL|SDIO_FLAG_DCRCFAIL|SDIO_FLAG_DTIMEOUT|SDIO_FLAG_DBCKEND));
   printf("savestatus %x r1 %x\n",savestatus, saver1);
