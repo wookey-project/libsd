@@ -8,6 +8,7 @@
 #include "libc/nostd.h"
 #include "libc/string.h"
 #include "libc/regutils.h"
+#include "libc/sanhandlers.h"
 
 /*
  * BLOCK_SIZE - Size of block on GoodUSB
@@ -1322,6 +1323,8 @@ uint32_t sd_init(void)
     //
     //when we reach here card is initialized AND in STBY state!
     //
+    /* Register our handler */
+    ADD_LOC_HANDLER(sd_data_transfer_automaton)
     sdio_set_irq_handler(sd_data_transfer_automaton);
  out:
     return err;
