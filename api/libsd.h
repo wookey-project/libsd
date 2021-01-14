@@ -42,6 +42,14 @@ uint32_t sd_get_capacity(void);
 
 uint8_t sd_get_cid(uint32_t **cid_p, uint32_t *cid_len);
 
+uint8_t sd_set_bus_width_sync(uint8_t width);
+void sd_set_block_len(uint32_t len);
+
+uint8_t sd_is_locked();
+void sd_unlock_card(uint8_t *pwd,uint8_t len);
+void sd_set_password(uint8_t* oldpwd, uint8_t oldlen,
+                      uint8_t *pwd, uint8_t len);
+
 extern volatile uint8_t sd_error;
 extern uint32_t saver1;
 extern uint32_t savestatus;
