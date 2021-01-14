@@ -1,7 +1,5 @@
 #include "libsd.h"
 #include "libsdio.h"
-//#include "sdio_regs.h"
-//#include "sdio.h"               // FIXME: should not be included here
 #include "sd.h"
 #include "libc/syscall.h"
 #include "libc/stdio.h"
@@ -430,7 +428,7 @@ uint8_t sd_set_bus_width_sync(uint8_t width)
     struct sdio_cmd cmd;
     uint32_t localretries = 0;
 
-//ACMD command
+    //ACMD command
     for (localretries = 1000; 0 != localretries; localretries--) {
         memset(&cmd, 0, sizeof(cmd));
         cmd.cmd_value = SD_APP_CMD;
@@ -635,13 +633,13 @@ static void send_cmd1()
 }
 uint32_t mmc_init_automaton()
 {
-//This is a MultimediaCard skip CMD11 and go CMD2
-//We start as in CMD1 as stated in SD SPEC 4.1 p41
-printf("card does not support voltage\n");
-g_sd_card.state = SD_IDLE;
-sdio_set_timeout(0xfffffff);
-send_cmd1();    //SEND_ALL_CID
-return 1;
+    //This is a MultimediaCard skip CMD11 and go CMD2
+    //We start as in CMD1 as stated in SD SPEC 4.1 p41
+    printf("card does not support voltage\n");
+    g_sd_card.state = SD_IDLE;
+    sdio_set_timeout(0xfffffff);
+    send_cmd1();    //SEND_ALL_CID
+    return 1;
 }
 
 /*
@@ -728,7 +726,6 @@ uint32_t sdcard_init_automaton()
             g_sd_card.sd_or_mmc=0;//We detected an MMC card
             g_sd_card.state = SD_IDLE;
             break;
-            //return mmc_init_automaton();    
           }        //
           if ((*r_CORTEX_M_SDIO_CMD & 0x3f) == 55)    //CMD55)
           {
@@ -1386,7 +1383,7 @@ static void send_cmd42(uint8_t *block, uint32_t blocklen)
     sd_send_cmd(cmd);        
     
 }
-uint8_t block[512];
+static uint8_t block[512];
 void sd_clear_password(uint8_t* oldpwd, uint8_t oldlen)
 {
   //the card shall be selected before calling this function
@@ -1396,7 +1393,6 @@ void sd_clear_password(uint8_t* oldpwd, uint8_t oldlen)
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
 
-  //prepare_block(block,oldpwd,oldlen,pwd,len);//
   memset(block,0,sizeof(block));
   block[0]=0x6; // means clear password and unlock the card
   block[1]=oldlen; 
@@ -1407,7 +1403,7 @@ void sd_clear_password(uint8_t* oldpwd, uint8_t oldlen)
   send_cmd42(block, sizeof(block));
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL|SDIO_FLAG_DCRCFAIL|SDIO_FLAG_DTIMEOUT|SDIO_FLAG_DBCKEND));
   printf("savestatus %x r1 %x\n",savestatus, saver1);
-while(savestatus);
+  while(savestatus);
   //Error checking
   /*FIXME*/
 }
@@ -1415,16 +1411,9 @@ while(savestatus);
 void sd_set_password(uint8_t* oldpwd, uint8_t oldlen,
                       uint8_t *pwd, uint8_t len)
 {
-  //uint8_t block[512];
-  //the card shall be selected before calling this function
-  //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
-  //sd_set_block_len(2+oldlen+len);
-  //sd_set_block_len(512);
-  //*((uint32_t*)(0x40012c2c))=0x31;
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
 
-  //prepare_block(block,oldpwd,oldlen,pwd,len);//
   memset(block,0,sizeof(block));
   //block[0]=0x2; // means clear password and lock the card
   block[0]=0x5; // means set password and lock the card
@@ -1444,13 +1433,8 @@ void sd_set_password(uint8_t* oldpwd, uint8_t oldlen,
 
   for(int i=0;i<len;i++) //next new password
     block[i+2+oldlen]=pwd[i];
-  //send_cmd42(block, 2+oldlen+len /*sizeof(block)*/);
-  //send_cmd42(block, (2+oldlen+len)+(((2+oldlen+len)&0x3)?4-((2+oldlen+len)&0x3):0));
-  //send_cmd42(block, (2+oldlen+len));
   send_cmd42(block, sizeof(block));
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
-  //sdio_hw_write_fifo((uint32_t*)block,(2+oldlen+len+3)/4);
-  //sdio_hw_write_fifo((uint32_t*)block,sizeof(block)/4);
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL|SDIO_FLAG_DCRCFAIL|SDIO_FLAG_DTIMEOUT|SDIO_FLAG_DBCKEND|SDIO_FLAG_DATAEND));
   printf("locking done savestatus %x r1 %x\n",savestatus, saver1);
   //Error checking
@@ -1458,12 +1442,6 @@ void sd_set_password(uint8_t* oldpwd, uint8_t oldlen,
 }
 void sd_unlock_card(uint8_t *pwd,uint8_t len)
 {
-  //uint8_t block[512];
-  //the card shall be selected before calling this function
-  //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
-  //sd_set_block_len(len+2);
-  //sd_set_block_len(512);
-
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
   
@@ -1476,9 +1454,7 @@ void sd_unlock_card(uint8_t *pwd,uint8_t len)
   }
   for(int i=0;i<len;i++) //next new password
     block[i+2]=pwd[i];
-  //send_cmd42(block,len+(4-(len&0x3)));
   send_cmd42(block,sizeof(block));
-  //send_cmd42(block,sizeof(block));
   while(!sd_getflags(SDIO_FLAG_DTIMEOUT | SDIO_FLAG_DCRCFAIL | SDIO_FLAG_DBCKEND));
   //Error checking
 
@@ -1486,18 +1462,12 @@ void sd_unlock_card(uint8_t *pwd,uint8_t len)
 void sdio_hw_write_fifo(uint32_t * buf, uint32_t size);
 void sd_forceerase_card()
 {
-  //uint8_t block[512];
-  //the card shall be selected before calling this function
-  //send_cmd16_syncset block len to 512 (mandatory according SD Spec)
-  //sd_set_block_len(512);
-
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
   
   memset(block,0x08,sizeof(block));
   block[0]=0x08;// means unlock the card
 
-  //sdio_hw_write_fifo((uint32_t*)block,1);
   send_cmd42(block,sizeof(block));
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
    
@@ -1521,7 +1491,7 @@ uint32_t sd_init(void)
     //assume that the card is an sd_card
     g_sd_card.sd_or_mmc=1;// 1 means SD
     sdio_init();
-// From whatever state we are coming for perform a card reset and go to IDLE STATE
+    // From whatever state we are coming for perform a card reset and go to IDLE STATE
     err = sd_card_reset();
     g_sd_card.state = SD_IDLE;
     if (err)
@@ -1550,9 +1520,6 @@ uint32_t sd_init(void)
     }
     get_csd_sync();
     select_card_sync();
-    //print_csd_v2((sd_csd_v2_t*)&g_sd_card.csd);
-    //printf("\ng_sd_card.cid\n");
-    //print_cid((sd_cid_t*)&g_sd_card.cid);
     g_sd_card.state = SD_TRAN;
 
     //
@@ -1561,25 +1528,6 @@ uint32_t sd_init(void)
     /* Register our handler */
     ADD_LOC_HANDLER(sd_data_transfer_automaton)
     sdio_set_irq_handler(sd_data_transfer_automaton);
-#if 0
-    //sd_forceerase_card();
-#if 1 //|| defined(SD_PASSWD)
-   // sd_clear_password((uint8_t*)"tamere",6,(uint8_t*)"tamere",0);
-    sd_unlock_card((uint8_t*)"tamere",0);
-    if (!(saver1 && (1<<25))) //Card is unlocked and no unlock operation 
-                            //undertaken so far
-    {
-        printf("No passwd set, I will lock card with a password\n");
-        sd_set_password((uint8_t*)"tamere",0,(uint8_t*)"tamere",6);
-    }
-    else
-      printf("the card is locked I give the pass\n");
-    sd_unlock_card((uint8_t*)"tamere",6);
-    //sys_cfg(CFG_DMA_DISABLE,dma_descriptor);
-#endif
-    sd_set_bus_width_sync(4);
-    sd_set_block_len(512);
-#endif
     
  out:
     return err;
