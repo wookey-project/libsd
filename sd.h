@@ -4,6 +4,13 @@
 #include "libsdio.h"
 #include "libc/types.h"
 
+#if CONFIG_USR_LIB_SD_DEBUG
+# define log_printf(...) printf(__VA_ARGS__)
+#else
+# define log_printf(...)
+#endif
+
+
 struct sdio_cmd {
     union {
         struct {

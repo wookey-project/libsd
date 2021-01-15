@@ -6,3 +6,14 @@ config USR_LIB_SD
   Support for SDCard hardware-independent protocol implementation.
   This lib depends on the sdio driver, which manage the HW IP.
 
+if USR_LIB_SD
+
+menu "SD options"
+
+config USR_LIB_SD_DEBUG
+  bool "Activate libSD debugging informations"
+  default n
+
+endmenu
+
+endif

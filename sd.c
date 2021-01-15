@@ -80,52 +80,56 @@ static uint32_t sd_getflags(uint32_t mask)
 /*
  * Queue of commands
  */
-static void print_cid(sd_cid_t * cid)
+static void print_cid(sd_cid_t * cid __attribute__((unused)))
 {
-    printf("reserved0: %d\n", cid->reserved0);
-    printf("crc: %x\n", cid->crc);
-    printf("mdt: %x\n", cid->mdt);
-    printf("reserved20: %d\n", cid->reserved20);
-    printf("psn: %x\n", cid->psn);
-    printf("prv: %x\n", cid->prv);
-    printf("pnm: %lx\n", cid->pnm);
-    printf("oid: %x\n",cid->oid);
-    printf("mid: %x\n",cid->mid);
+#ifdef CONFIG_USR_LIB_SD_DEBUG
+    log_printf("reserved0: %d\n", cid->reserved0);
+    log_printf("crc: %x\n", cid->crc);
+    log_printf("mdt: %x\n", cid->mdt);
+    log_printf("reserved20: %d\n", cid->reserved20);
+    log_printf("psn: %x\n", cid->psn);
+    log_printf("prv: %x\n", cid->prv);
+    log_printf("pnm: %lx\n", cid->pnm);
+    log_printf("oid: %x\n",cid->oid);
+    log_printf("mid: %x\n",cid->mid);
+#endif
 }
 
-static void print_csd_v2(sd_csd_v2_t * csd)
+static void print_csd_v2(sd_csd_v2_t * csd __attribute__((unused)))
 {
-    printf("reserved0: %d\n", csd->reserved0);
-    printf("crc: %x\n", csd->crc);
-    printf("reserved8: %d\n", csd->reserved8);
-    printf("file_format: %d\n", csd->file_format);
-    printf("tmp_write_protect: %d\n", csd->tmp_write_protect);
-    printf("perm_write_protect: %d\n", csd->perm_write_protect);
-    printf("copy: %d\n", csd->copy);
-    printf("file_format_grp: %d\n", csd->file_format_grp);
-    printf("reserved16: %d\n", csd->reserved16);
-    printf("write_bl_partial: %d\n", csd->write_bl_partial);
-    printf("write_bl_len: %d\n", csd->write_bl_partial);
-    printf("r2w_factor: %d\n", csd->r2w_factor);
-    printf("reserved29: %d\n", csd->reserved29);
-    printf("wp_grp_enable: %d\n", csd->wp_grp_enable);
-    printf("wp_grp_size: %d\n", csd->wp_grp_size);
-    printf("sector_size: %d\n", csd->sector_size);
-    printf("erase_blk_en: %d\n", csd->erase_blk_en);
-    printf("reserved47: %d\n", csd->reserved47);
-    printf("c_size: %x\n", csd->c_size);
-    printf("reserved70: %d\n", csd->reserved70);
-    printf("dsr_imp: %d\n", csd->dsr_imp);
-    printf("read_blk_misalign: %d\n", csd->read_blk_misalign);
-    printf("write_blk_misalign: %d\n", csd->write_blk_misalign);
-    printf("read_bl_partial: %d\n", csd->read_bl_partial);
-    printf("read_bl_len: %d\n", csd->read_bl_len);
-    printf("ccc: %l\n", csd->ccc);
-    printf("tran_speed: %d\n", csd->tran_speed);
-    printf("nsac: %d\n", csd->nsac);
-    printf("taac: %d\n", csd->taac);
-    printf("reserved120: %d\n", csd->reserved120);
-    printf("csd_structure: %d\n", csd->csd_structure);
+#ifdef CONFIG_USR_LIB_SD_DEBUG
+    log_printf("reserved0: %d\n", csd->reserved0);
+    log_printf("crc: %x\n", csd->crc);
+    log_printf("reserved8: %d\n", csd->reserved8);
+    log_printf("file_format: %d\n", csd->file_format);
+    log_printf("tmp_write_protect: %d\n", csd->tmp_write_protect);
+    log_printf("perm_write_protect: %d\n", csd->perm_write_protect);
+    log_printf("copy: %d\n", csd->copy);
+    log_printf("file_format_grp: %d\n", csd->file_format_grp);
+    log_printf("reserved16: %d\n", csd->reserved16);
+    log_printf("write_bl_partial: %d\n", csd->write_bl_partial);
+    log_printf("write_bl_len: %d\n", csd->write_bl_partial);
+    log_printf("r2w_factor: %d\n", csd->r2w_factor);
+    log_printf("reserved29: %d\n", csd->reserved29);
+    log_printf("wp_grp_enable: %d\n", csd->wp_grp_enable);
+    log_printf("wp_grp_size: %d\n", csd->wp_grp_size);
+    log_printf("sector_size: %d\n", csd->sector_size);
+    log_printf("erase_blk_en: %d\n", csd->erase_blk_en);
+    log_printf("reserved47: %d\n", csd->reserved47);
+    log_printf("c_size: %x\n", csd->c_size);
+    log_printf("reserved70: %d\n", csd->reserved70);
+    log_printf("dsr_imp: %d\n", csd->dsr_imp);
+    log_printf("read_blk_misalign: %d\n", csd->read_blk_misalign);
+    log_printf("write_blk_misalign: %d\n", csd->write_blk_misalign);
+    log_printf("read_bl_partial: %d\n", csd->read_bl_partial);
+    log_printf("read_bl_len: %d\n", csd->read_bl_len);
+    log_printf("ccc: %l\n", csd->ccc);
+    log_printf("tran_speed: %d\n", csd->tran_speed);
+    log_printf("nsac: %d\n", csd->nsac);
+    log_printf("taac: %d\n", csd->taac);
+    log_printf("reserved120: %d\n", csd->reserved120);
+    log_printf("csd_structure: %d\n", csd->csd_structure);
+#endif
 }
 
 static int8_t sd_send_cmd(struct sdio_cmd cmd)
@@ -343,7 +347,7 @@ static int check_r6_error(void)
     return 0;                   //FIXME
     for (i = 0; i < ARRAY_SIZE(card_status_r6, struct card_status_bit); i++) {
         if (r6 & card_status_r6[i].mask && card_status_r6[i].type == ERROR_BIT) {
-            printf("Unexpected card response\n");
+            log_printf("Unexpected card response\n");
             return -1;
         }
     }
@@ -438,7 +442,7 @@ uint8_t sd_set_bus_width_sync(uint8_t width)
         while (!sd_getflags
                (SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND)) ;
         if (sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL)) {
-            printf("error status %x\n", sd_getflags(0xffffffff));
+            log_printf("error status %x\n", sd_getflags(0xffffffff));
             continue;
         }
         memset(&cmd, 0, sizeof(cmd));
@@ -457,8 +461,8 @@ uint8_t sd_set_bus_width_sync(uint8_t width)
         break;
     }
     if (!localretries) {
-        printf("cannot set bus width\n");
-        g_sd_card.ACMD=0;//reset an eventual flag ACMD 
+        log_printf("cannot set bus width\n");
+        g_sd_card.ACMD=0;//reset an eventual flag ACMD
         g_sd_card.bus_width = 1;
         sdio_hw_set_bus_width(1);
         err=SD_ERROR;
@@ -539,7 +543,7 @@ static void _send_acmd41()
 {
     struct sdio_cmd cmd;
 
-    printf("_send_acmd41 %x\n",SD_SEND_OP_COND);
+    log_printf("_send_acmd41 %x\n",SD_SEND_OP_COND);
     memset(&cmd, 0, sizeof(cmd));
     cmd.cmd_value = SD_SEND_OP_COND;
     //HOST CAPACITY SUPPORT (1 means HC and XC supported)
@@ -605,11 +609,11 @@ static void send_cmd12()
     sd_send_cmd(cmd);
 }
 
-// Voltage switch for MMC cards 
+// Voltage switch for MMC cards
 // Arg is OCR see P128 of JEDEC std 4.41
 static void send_cmd11()
 {
-    
+
     struct sdio_cmd cmd;
 
     memset(&cmd, 0, sizeof(cmd));
@@ -635,7 +639,7 @@ uint32_t mmc_init_automaton()
 {
     //This is a MultimediaCard skip CMD11 and go CMD2
     //We start as in CMD1 as stated in SD SPEC 4.1 p41
-    printf("card does not support voltage\n");
+    log_printf("card does not support voltage\n");
     g_sd_card.state = SD_IDLE;
     sdio_set_timeout(0xfffffff);
     send_cmd1();    //SEND_ALL_CID
@@ -656,7 +660,7 @@ uint32_t sdcard_init_automaton()
         case SD_IDLE:
           switch(lastcom ) {
             case 0:
-              // Reinit the card 
+              // Reinit the card
               g_sd_card.send_if=0;
               //if (CS is asserted) //SPI operation Mode
               sd_cmd8();      //SD_SEND_IF_COND
@@ -671,10 +675,10 @@ uint32_t sdcard_init_automaton()
                 //FIXME: what to do if card does not support voltage?
                 g_sd_card.hcs = 0;
                 g_sd_card.state=SD_IDLE;
-                printf("Card does not support Voltage or is MMC\n");
+                log_printf("Card does not support Voltage or is MMC\n");
                 sdio_set_timeout(0xfffffff);
                 g_sd_card.state = SD_ACMD41;
-                send_acmd41();  //check if ACMD41 is answered 
+                send_acmd41();  //check if ACMD41 is answered
                                 //if no card must be mmc
               } else if (tmp & SDIO_FLAG_CMDREND) {
                 //FIXME: check for compatible voltage
@@ -694,13 +698,13 @@ uint32_t sdcard_init_automaton()
                         */
                 g_sd_card.state = SD_ACMD41;
                 send_acmd41();  //p29 set timeout > 1s
-                break;                
-              case 55: /* 
-                        we reach here if we detected multimedia and last CMD returned 
+                break;
+              case 55: /*
+                        we reach here if we detected multimedia and last CMD returned
                         busy or host has omitted voltage (we did not)
                         just retry
                       */
-                printf("ACMD41 Failed in timeout\n");
+                log_printf("ACMD41 Failed in timeout\n");
                   g_sd_card.state=SD_READY;
                   send_cmd1();
                   break;
@@ -709,7 +713,7 @@ uint32_t sdcard_init_automaton()
                   *  just retry
                   */
 
-                printf("CMD1 Failed in timeout\n");
+                log_printf("CMD1 Failed in timeout\n");
                   g_sd_card.state=SD_READY;
                 send_cmd1();   //Voltage switch
 
@@ -736,13 +740,12 @@ uint32_t sdcard_init_automaton()
           }
           else {
               //busy ? retry
-                printf("je passe ici\n");
                 send_acmd41();  //p29 set timeout > 1s
           }
           break;
         case SD_READY:
           if (sd_getflags(SDIO_FLAG_CTIMEOUT)){
-            printf("timeout while in SD_READY\n");
+            log_printf("timeout while in SD_READY\n");
           }
           if (sd_getflags(SDIO_FLAG_CCRCFAIL))
             //Command CRCfail because response is OCR
@@ -776,7 +779,7 @@ uint32_t sdcard_init_automaton()
             }
             break;
           }
-          break;  
+          break;
         case SD_IDENT:
           switch (lastcom) {
             case 11:
@@ -804,7 +807,7 @@ uint32_t sdcard_init_automaton()
           break;
 
         default:
-          printf("unexecpted state %d\n",g_sd_card.state);
+          log_printf("unexecpted state %d\n",g_sd_card.state);
     }
     return err;
 }
@@ -818,7 +821,7 @@ void sd_launch_dma(int i)
                       DMA_RECONF_BUFIN | DMA_RECONF_BUFOUT | DMA_RECONF_BUFSIZE
                       | DMA_RECONF_DIR, dma_descriptor);
         if (ret != 0) {         // FIXME - use something like SUCCESS, FAILURE...
-            printf("error with DMA_RECONF: %s\n", strerror(ret));
+            log_printf("error with DMA_RECONF: %s\n", strerror(ret));
         }
     } else {                    /* OUT */
         /* out is done in ISR mode, we use fastcalls here */
@@ -858,18 +861,18 @@ static inline void handle_mmc_sleep(const uint32_t lastcom)
 {
     //What is the reason for awaking in this state
     switch (lastcom) {
-        case 5:               
+        case 5:
             g_sd_card.state = SD_STBY;
             break;
         default:
             //TODO: error checking here
-            printf("illegal command while in SD_STBY");
+            log_printf("illegal command while in SD_STBY");
     }
 }
 
 /*
  SD_IDLE state : P33 SD spec
- transition function as follow 
+ transition function as follow
           CMD7 -> SD_TRAN
           CMD4,9,10,3 -> SD_STBY
 */
@@ -895,7 +898,7 @@ static inline void handle_sd_stby(const uint32_t lastcom)
             break;
         default:
             //TODO: error checking here
-            printf("illegal command while in SD_STBY");
+            log_printf("illegal command while in SD_STBY");
     }
 }
 
@@ -1021,9 +1024,9 @@ static inline int handle_sd_tran(const uint32_t lastcom, uint32_t * nevents)
                 if (sd_getflags(SDIO_FLAG_CMDREND)) {
                 saver1 = sdio_hw_get_short_resp();
                 //printf("CMDREND %x\n",saver1);
-                sd_launch_dma(0);//enable DPSM 
-                //sdio_launch_dma(0);//enable DPSM 
-                  
+                sd_launch_dma(0);//enable DPSM
+                //sdio_launch_dma(0);//enable DPSM
+
              //   if (sd_getflags(SDIO_FLAG_DATA))        //Have the data transfer
              //       //also ended?
              //       (*nevents)++;
@@ -1031,11 +1034,11 @@ static inline int handle_sd_tran(const uint32_t lastcom, uint32_t * nevents)
             }
             if (sd_getflags(SDIO_FLAG_DATA)){
 
-              /*Fixme : error handling*/ 
+              /*Fixme : error handling*/
             }
           break;
 
-              
+
         case 49:
         case 56:               //w
         case 59:
@@ -1048,7 +1051,7 @@ static inline int handle_sd_tran(const uint32_t lastcom, uint32_t * nevents)
             g_sd_card.state = SD_PRG;
             break;
         default:
-            printf
+            log_printf
                 ("illegal command while in SD_TRAN %x flags %x|\n",
                  (g_sd_card.ACMD << 31) | lastcom, sd_getflags(0xffffffff));
     }
@@ -1073,7 +1076,7 @@ static inline void handle_sd_rcv(const uint32_t lastcom, uint32_t * nevents)
         (*nevents)++;
     } else {
         //FIXME: Error checking here
-            printf
+            log_printf
                 ("illegal command while in SD_RCV %x flags %x|\n",
                  (g_sd_card.ACMD << 31) | lastcom, sd_getflags(0xffffffff));
     }
@@ -1103,7 +1106,7 @@ static inline void handle_sd_data(const uint32_t lastcom)
         g_sd_card.state = SD_IDLE;
     } else {
         //FIXME: Error checking here
-        printf("illegal command while in SD_DATA\n");
+        log_printf("illegal command while in SD_DATA\n");
     }
 }
 
@@ -1126,7 +1129,7 @@ static inline void handle_sd_prg(const uint32_t lastcom)
             printf
                 ("illegal command while in SD_PRG %x flags %x|\n",
                  (g_sd_card.ACMD << 31) | lastcom, sd_getflags(0xffffffff));
-        
+
     }
 }
 
@@ -1144,7 +1147,7 @@ static inline void handle_sd_dis(const uint32_t lastcom)
         //Check that is is our RCA
         g_sd_card.state = SD_PRG;
     } else {
-        printf("illegal command while in SD_DIS");
+        log_printf("illegal command while in SD_DIS");
     }
 }
 
@@ -1202,7 +1205,7 @@ uint32_t sd_data_transfer_automaton()
                 handle_sd_dis(lastcom);
                 break;
             default:
-                printf("Unexpected state!");
+                log_printf("Unexpected state!");
                 for(;;);/* do not go any further */
                 break;
 
@@ -1242,7 +1245,7 @@ static void prepare_transfer_customblock(dma_dir_t dir, uint32_t * buffer, uint3
     }
     return;
  err:
-    printf("Unable to reconfigure DMA ! : %s\n", strerror(ret));
+    log_printf("Unable to reconfigure DMA ! : %s\n", strerror(ret));
 }
 
 static void prepare_transfer(dma_dir_t dir, uint32_t * buffer, uint32_t buf_len)
@@ -1275,7 +1278,7 @@ static void prepare_transfer(dma_dir_t dir, uint32_t * buffer, uint32_t buf_len)
     }
     return;
  err:
-    printf("Unable to reconfigure DMA ! : %s\n", strerror(ret));
+    log_printf("Unable to reconfigure DMA ! : %s\n", strerror(ret));
 }
 
 static int8_t new_sd_rw(uint32_t * buffer, uint32_t addr, uint32_t size,
@@ -1287,7 +1290,7 @@ static int8_t new_sd_rw(uint32_t * buffer, uint32_t addr, uint32_t size,
     memset(&cmd, 0, sizeof(cmd));
     cmd.cmd_value = op;
     /*CF P106 SDSC use bytes unit address but SDHC and SDXC use block */
-    //  printf("%s: %d BLOCK_SIZE %x\n",__func__,__LINE__,BLOCK_SIZE);
+    //  log_printf("%s: %d BLOCK_SIZE %x\n",__func__,__LINE__,BLOCK_SIZE);
     cmd.arg = g_sd_card.ccs ? addr : BLOCK_SIZE * addr;
     cmd.response = SHORT_RESP;
     //send read/write cmd
@@ -1337,12 +1340,12 @@ uint8_t sd_early_init(void)
 
     ret = sys_init(INIT_DMA, &dma, &dma_descriptor);
     if (ret) {
-        printf("%s:%d %d\n", __FILE__, __LINE__, ret);
+        log_printf("%s:%d %d\n", __FILE__, __LINE__, ret);
     }
 
     ret |= sdio_early_init();
     if (ret) {
-        printf("%s:%d %d\n", __FILE__, __LINE__, ret);
+        log_printf("%s:%d %d\n", __FILE__, __LINE__, ret);
     }
     return ret;
 }
@@ -1367,8 +1370,8 @@ static void send_cmd42_nodma(uint8_t __attribute__((unused)) *block, uint32_t __
     cmd.response = SHORT_RESP;
     prepare_transfer_nodma(MEMORY_TO_PERIPHERAL,(uint32_t*)block,blocklen);
 
-    sd_send_cmd(cmd);        
-    
+    sd_send_cmd(cmd);
+
 }
 static void send_cmd42(uint8_t *block, uint32_t blocklen)
 {
@@ -1380,8 +1383,8 @@ static void send_cmd42(uint8_t *block, uint32_t blocklen)
     cmd.response = SHORT_RESP;
     prepare_transfer(MEMORY_TO_PERIPHERAL,(uint32_t*)block,blocklen);
 
-    sd_send_cmd(cmd);        
-    
+    sd_send_cmd(cmd);
+
 }
 static uint8_t block[512];
 void sd_clear_password(uint8_t* oldpwd, uint8_t oldlen)
@@ -1395,14 +1398,14 @@ void sd_clear_password(uint8_t* oldpwd, uint8_t oldlen)
 
   memset(block,0,sizeof(block));
   block[0]=0x6; // means clear password and unlock the card
-  block[1]=oldlen; 
-  
+  block[1]=oldlen;
+
   for(int i=0;i<oldlen;i++)//first old password
     block[i+2]=oldpwd[i];
 
   send_cmd42(block, sizeof(block));
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL|SDIO_FLAG_DCRCFAIL|SDIO_FLAG_DTIMEOUT|SDIO_FLAG_DBCKEND));
-  printf("savestatus %x r1 %x\n",savestatus, saver1);
+  log_printf("savestatus %x r1 %x\n",savestatus, saver1);
   while(savestatus);
   //Error checking
   /*FIXME*/
@@ -1417,15 +1420,15 @@ void sd_set_password(uint8_t* oldpwd, uint8_t oldlen,
   memset(block,0,sizeof(block));
   //block[0]=0x2; // means clear password and lock the card
   block[0]=0x5; // means set password and lock the card
-  block[1]=oldlen+len; 
-  
+  block[1]=oldlen+len;
+
   if(len > 16) {
-    printf("Wrong password length\n");
+    log_printf("Wrong password length\n");
     return ;
   }
 
   if(oldlen > 16) {
-    printf("Wrong Old password length\n");
+    log_printf("Wrong Old password length\n");
     return ;
   }
   for(int i=0;i<oldlen;i++)//first old password
@@ -1436,7 +1439,7 @@ void sd_set_password(uint8_t* oldpwd, uint8_t oldlen,
   send_cmd42(block, sizeof(block));
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL|SDIO_FLAG_DCRCFAIL|SDIO_FLAG_DTIMEOUT|SDIO_FLAG_DBCKEND|SDIO_FLAG_DATAEND));
-  printf("locking done savestatus %x r1 %x\n",savestatus, saver1);
+  log_printf("locking done savestatus %x r1 %x\n",savestatus, saver1);
   //Error checking
   /*FIXME*/
 }
@@ -1444,12 +1447,12 @@ void sd_unlock_card(uint8_t *pwd,uint8_t len)
 {
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
-  
+
   memset(block,0,sizeof(block));
   block[0]=0x0;// means unlock the card
-  block[1]=len; 
+  block[1]=len;
   if(len > 16) {
-    printf("Wrong password length\n");
+    log_printf("Wrong password length\n");
     return ;
   }
   for(int i=0;i<len;i++) //next new password
@@ -1464,13 +1467,13 @@ void sd_forceerase_card()
 {
   //wait for completion
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
-  
+
   memset(block,0x08,sizeof(block));
   block[0]=0x08;// means unlock the card
 
   send_cmd42(block,sizeof(block));
   while(!sd_getflags(SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND));
-   
+
   while(!sd_getflags(SDIO_FLAG_DTIMEOUT | SDIO_FLAG_DCRCFAIL | SDIO_FLAG_DBCKEND));
   do {
     send_cmd13_card();
@@ -1528,7 +1531,7 @@ uint32_t sd_init(void)
     /* Register our handler */
     ADD_LOC_HANDLER(sd_data_transfer_automaton)
     sdio_set_irq_handler(sd_data_transfer_automaton);
-    
+
  out:
     return err;
 }
