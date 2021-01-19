@@ -1461,6 +1461,9 @@ void sd_unlock_card(uint8_t *pwd,uint8_t len)
   while(!sd_getflags(SDIO_FLAG_DTIMEOUT | SDIO_FLAG_DCRCFAIL | SDIO_FLAG_DBCKEND));
   //Error checking
 
+  if (sd_set_bus_width_sync(4) == SD_ERROR) {
+      log_printf("ERR: failure while setting SD bus width to 4!\n");
+  }
 }
 void sdio_hw_write_fifo(uint32_t * buf, uint32_t size);
 void sd_forceerase_card()
@@ -1523,6 +1526,12 @@ uint32_t sd_init(void)
     }
     get_csd_sync();
     select_card_sync();
+
+    /* try to set bus width to 4. If it fails, the SDCard is probably locked. */
+    if (sd_set_bus_width_sync(4) == SD_ERROR) {
+        log_printf("INFO: setting SD bus width to 4 failed! Card locked?\n");
+    }
+
     g_sd_card.state = SD_TRAN;
 
     //
