@@ -1528,9 +1528,9 @@ uint32_t sd_init(void)
     select_card_sync();
 
     /* try to set bus width to 4. If it fails, the SDCard is probably locked. */
-    if (sd_set_bus_width_sync(4) == SD_ERROR) {
-        log_printf("INFO: setting SD bus width to 4 failed! Card locked?\n");
-    }
+//    if (sd_set_bus_width_sync(4) == SD_ERROR) {
+//        log_printf("INFO: setting SD bus width to 4 failed! Card locked?\n");
+//    }
 
     g_sd_card.state = SD_TRAN;
 
